@@ -32,7 +32,7 @@ def caesar():
     ans = input("What is the word?\n").strip()
     while ans != word:
         ans = input("Incorrect. Try again: ")
-    print("WINNER")
+    print("You win! That was a caesar cipher with a shift of {shift}. Nice work!")
     
 def rotThirteen():
     intro(level="2")
@@ -50,9 +50,10 @@ def rotThirteen():
     ans = input("What is the word?\n").strip()
     while ans != word:
         ans = input("Incorrect. Please try again: ")
-    print("Winner!")
+    print("You win! That was a ROT13 cipher which always has a shift of 13. Nice work!")
 try: 
     caesar()
     rotThirteen() # TODO: Iterate with this format
+
 except KeyboardInterrupt:
         print("\nQuitting game, goodbye.")
