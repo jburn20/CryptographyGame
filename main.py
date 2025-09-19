@@ -2,8 +2,8 @@
 Author: jburn20
 Program that teaches student cryptography
 """
-
-import random, os
+from demos import demo_registry
+import random, os, sys
 
 def intro(level):
     barrier = "************"
@@ -15,12 +15,32 @@ def random_picker():
     with open(os.path.join(os.path.dirname(__file__), "wordlist.txt"), "r") as f:
         words = [line.strip() for line in f if line.strip()]
     return random.choice(words)
-def list_demos():
-    demos = [f for f in os.listdir('demos') if f.endswith('.py')]
-    for i, demo in enumerate(demos, start=1):
-        print(f"[{i}] {demo}")
-    print("[0] Quit")
-    return demos
+def run_demos():
+    while True:
+        print("\nAvailable Demos:")
+        for i, name in enumerate(demo_registry.keys(), 1):
+            print(f"[{i}] {name}")
+        print("[0] Quit")
+
+        choice = input("Select a demo: ").strip()
+        if choice == "0":
+            print("Quitting game, goodbye.")
+            sys.exit()
+
+        try:
+            choice = int(choice)
+            demo_name = list(demo_registry.keys())[choice - 1]
+            print(f"\n--- Running {demo_name} ---\n")
+
+            try:
+                demo_registry[demo_name]()  # Run the selected demo
+            except Exception as e:
+                print(f"Error while running {demo_name}: {e}")
+
+            print("\n--- Demo finished ---\n")
+
+        except (ValueError, IndexError):
+            print("Invalid choice, please try again.")
 
 def run_demo(file_name):
     # Execute the demo file
@@ -90,24 +110,23 @@ def railFence():
     
     print("You win! That was a Rail Fence cipher with 3 rails. Nice work!")
 
+def vig():
+    pass
+
+def circularBitShift():
+    pass
 
 
 try:
     userMode = int(input("Welcome to a Cryptography learning game. Enter [1] to test your decryption skills or enter [2] to view encoding demonstrations.\n"))
     if userMode == 1: 
-        #caesar()
-        #rotThirteen()
+        caesar()
+        rotThirteen()
         railFence()
     elif userMode == 2:
         while True:
-            demos = list_demos()
-            demoMode = int(input("Which demo would you like to watch?\n"))
-            if demoMode == 0:
-                break
-            elif 1 <= demoMode <= len(demos):
-                run_demo(demos[demoMode - 1])
-            else:
-                print("Invalid choice. Try again.\n")
+            run_demos()
+            
         # TODO: Iterate with this format
     
 except KeyboardInterrupt:
