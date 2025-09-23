@@ -52,13 +52,14 @@ def caesar_demo(word="hello", shift=None, delay=0.1):
     print("\n\nFinal Ciphertext:", "".join(bottom_row))
 
 
-"""
-if __name__ == "__main__":
+
+"""if __name__ == "__main__":
     print("This is a visual demonstration of how the Caesar cipher works. \n" \
     "Each letter is shifted by the same value, which is then used to decode the message by shifting each letter back by the same amount.")
-    caesar_demo("helloworld", shift=5, delay=0.09)
-"""
+    caesar_demo("helloworld", shift=5, delay=0.09)"""
 @register_demo("Rot13")
+
+#!ROT13
 def rot13_word_animation(word="helloworld"):
     shift = 13
     alphabet = list(string.ascii_lowercase)
@@ -120,10 +121,10 @@ def rot13_word_animation(word="helloworld"):
     print("\nFinal ciphered phrase:", "".join(ciphered_display))
 
 
-#! Example usage
 #rot13_word_animation("hello world")
 @register_demo("Railfence")
 
+#!RAILFENCE
 def rail_fence_demo(word="HELLOWORLD", rails=3, delay=0.4):
     print("The rail fence cipher is a transposition cipher that writes characters in a zigzag pattern across a given number of rows(rails).")
 
@@ -168,6 +169,7 @@ def rail_fence_demo(word="HELLOWORLD", rails=3, delay=0.4):
 if __name__ == "__main__":
     rail_fence_demo("HELLOWORLD", rails=3, delay=0.4)
 """
+#! VIGENERE
 @register_demo("Vigenere")
 def vigenere_number_animation(plaintext="HELLO WORLD", key="KEY", delay=0.8):
     """
@@ -238,8 +240,10 @@ def vigenere_number_animation(plaintext="HELLO WORLD", key="KEY", delay=0.8):
 #! Example usage
 #vigenere_number_animation("HELLO WORLD", "KEY", delay=1)
 @register_demo("Circularbitshift")
+
+#!CIRCULARBITSHIFT
 def circular_bit_shift_animation(value=178, shift=5, direction='left', delay=0.5):
-    """
+    """     
     Animates circular bit shifts for an 8-bit integer.
     
     value: integer 0-255
@@ -276,3 +280,276 @@ def circular_bit_shift_animation(value=178, shift=5, direction='left', delay=0.5
 
 # Example usage:
 #circular_bit_shift_animation(178, shift=5, direction='left', delay=0.9)
+@register_demo("Columnar")
+
+#!COLUMNAR
+def columnar_demo():
+    key = "KEY"
+    plaintext = "HELLO_WORLD_"   # padded with underscores
+    cols = len(key)
+    rows = (len(plaintext) + cols - 1) // cols  # ceiling division
+    grid = [[" " for _ in range(cols)] for _ in range(rows)]
+
+    # Column order: 2 above col 0, 1 above col 1, 3 above col 2
+    order = [2, 1, 3]
+
+    def display(ciphertext="", highlight=None):
+        """
+        highlight: tuple (row, col) -> add '!' next to the highlighted cell
+        """
+        os.system("cls" if os.name == "nt" else "clear")
+        print("Columnar Transposition Cipher Demo\n")
+        #print("Key:   ", " ".join(f" {ch} " for ch in key))
+        #print("Order: ", " ".join(f" {num} " for num in order))
+        print(" K   E   Y")
+        print(" 2   1   3")
+        for r, row in enumerate(grid):
+            line = []
+            for c, x in enumerate(row):
+                if highlight == (r, c):
+                    line.append(f"[!{x}!]")   # mark the cell being read
+                else:
+                    line.append(f"[{x}]")
+            print(" ".join(line))
+        print("\nCiphertext:", ciphertext)
+    #* Step 2: animate filling plaintext row by row
+    for i, ch in enumerate(plaintext):
+        r, c = divmod(i, cols)
+        grid[r][c] = ch
+        
+        display()
+        time.sleep(0.3)
+    time.sleep(1) #*
+    #* Step 3: read ciphertext column by column in given order
+    ciphertext = ""
+    for col in sorted(range(cols), key=lambda x: order[x]):
+        for row in range(rows):
+            ciphertext += grid[row][col]
+            display(ciphertext,highlight=(row,col))
+            time.sleep(0.45)
+
+    print("\nFinal Ciphertext:", ciphertext)
+
+
+@register_demo("Vertical Spinner")
+
+#!VERTICAL SPINNER
+def vertical_spinner_alternating_demo(input_phrase="HELLO"):
+    """
+    Vertical spinner demo with alternating column directions:
+    - Even-indexed columns scroll up
+    - Odd-indexed columns scroll down
+    - Random spin count per column
+    - Counter above each column showing remaining spins
+    - Top/Middle/Bottom rows always distinct
+    - Real-time ciphertext assembly
+    """
+    alphabet = string.ascii_uppercase
+    input_phrase = input_phrase.upper()
+
+    # Initialize columns with random shifts
+    columns = []
+    for ch in input_phrase:
+        if ch not in alphabet:
+            ch = "_"
+            idx = 0
+        else:
+            idx = alphabet.index(ch)
+        spins = random.randint(3, 10)  # random spin count per column
+        top = alphabet[(idx - 1) % 26]
+        middle = alphabet[idx]
+        bottom = alphabet[(idx + 1) % 26]
+        columns.append({
+            "top": top,
+            "middle": middle,
+            "bottom": bottom,
+            "idx": idx,
+            "counter": spins
+        })
+
+    ciphertext = ""  # assembled ciphertext
+
+    # Animate columns one at a time
+    for col_num, col in enumerate(columns):
+        shift_up = (col_num % 2 == 0)  # even columns up, odd columns down
+
+        while col['counter'] > 0:
+            os.system("cls" if os.name == "nt" else "clear")
+            print("Vertical Spinner Cipher Demo\n")
+
+            # Display counters
+            print("Counter: ", end="")
+            for c_num, c in enumerate(columns):
+                if c_num == col_num:
+                    print(f"{c['counter']:2} ", end="")
+                else:
+                    print(" - ", end="")
+            print("\n")
+
+            # Display rows
+            for row_name in ["top", "middle", "bottom"]:
+                print(f"{row_name.capitalize():<8}", end="")
+                for c_num, c in enumerate(columns):
+                    if c_num == col_num and row_name == "middle":
+                        print(f"{c[row_name]}!", end=" ")
+                    else:
+                        print(f"{c[row_name]}", end=" ")
+                print()
+            print()
+            print(f"Ciphertext: {ciphertext}\n")  # show live ciphertext
+            time.sleep(0.3)
+
+            # Shift column
+            if shift_up:
+                # Upward shift
+                col['top'] = col['middle']
+                col['middle'] = col['bottom']
+                col['idx'] = (col['idx'] + 1) % 26
+                col['bottom'] = alphabet[(alphabet.index(col['middle']) + 1) % 26]
+            else:
+                # Downward shift
+                col['bottom'] = col['middle']
+                col['middle'] = col['top']
+                col['idx'] = (col['idx'] - 1) % 26
+                col['top'] = alphabet[(alphabet.index(col['middle']) - 1) % 26]
+
+            # Decrement counter
+            col['counter'] -= 1
+
+        # Append final middle value to ciphertext
+        ciphertext += col['middle']
+
+    # Final display
+    os.system("cls" if os.name == "nt" else "clear")
+    print("Vertical Spinner Cipher Demo (Alternating)\n")
+    print(f"Ciphertext: {ciphertext}\n")
+    for row_name in ["top", "middle", "bottom"]:
+        print(f"{row_name.capitalize():<8}", end="")
+        for c in columns:
+            print(f"{c[row_name]}", end=" ")
+        print()
+    print("\nDone! Ciphertext assembled.")
+@register_demo("Playfair")
+
+#!PLAYFAIR
+
+
+
+def playfair_interactive_demo(plaintext="HELLO"):
+    # 5x5 Playfair key grid (drop J)
+    grid = [
+        ['P','L','A','Y','F'],
+        ['I','B','C','D','E'],
+        ['G','H','K','M','N'],
+        ['O','Q','R','S','T'],
+        ['U','V','W','X','Z']
+    ]
+
+    def find_pos(ch):
+        for r, row in enumerate(grid):
+            for c, val in enumerate(row):
+                if val == ch:
+                    return r, c
+        return None
+
+    def display_grid(highlight=None):
+        lines = []
+        for r, row in enumerate(grid):
+            line = ""
+            for c, val in enumerate(row):
+                if highlight and (r, c) in highlight:
+                    line += f"{val}! "
+                else:
+                    line += f"{val}  "
+            lines.append(line)
+        return "\n".join(lines)
+
+    # Prepare plaintext
+    plaintext = plaintext.upper().replace("J","I").replace(" ", "")
+    
+    # Create digraphs
+    digraphs = []
+    i = 0
+    while i < len(plaintext):
+        a = plaintext[i]
+        b = plaintext[i+1] if i+1 < len(plaintext) and plaintext[i+1] != a else 'X'
+        digraphs.append(a+b)
+        i += 2 if b != 'X' else 1
+
+    history = []  # (plaintext, cipher)
+    dig_index = 0
+    sub_step = 0  # 0 = highlight original, 1 = show transformed
+
+    while dig_index < len(digraphs):
+        pair = digraphs[dig_index]
+        r1, c1 = find_pos(pair[0])
+        r2, c2 = find_pos(pair[1])
+
+        # Compute transformed positions
+        if r1 == r2:
+            new_positions = [(r1, (c1+1)%5), (r2, (c2+1)%5)]
+            rule = "Same Row -> Shift Right"
+        elif c1 == c2:
+            new_positions = [((r1+1)%5, c1), ((r2+1)%5, c2)]
+            rule = "Same Column -> Shift Down"
+        else:
+            new_positions = [(r1, c2), (r2, c1)]
+            rule = "Rectangle -> Swap Corners"
+
+        # Reconstruct ciphertext from history
+        ciphertext = "".join(c for _, c in history)
+
+        os.system("cls" if os.name == "nt" else "clear")
+        sys.stdout.write("Playfair Cipher Interactive Demo\n\n")
+        
+        if sub_step == 0:
+            sys.stdout.write(display_grid(highlight=[(r1,c1),(r2,c2)]) + "\n\n")
+            sys.stdout.write(f"Original digraph: {pair}\n")
+            sys.stdout.write("Step A: Highlight plaintext pair. Press Enter to see transformation.\n")
+        else:
+            cipher_pair = "".join([grid[r][c] for r, c in new_positions])
+            if len(history) <= dig_index:
+                history.append((pair, cipher_pair))
+            ciphertext = "".join(c for _, c in history)
+
+            sys.stdout.write(display_grid(highlight=new_positions) + "\n\n")
+            sys.stdout.write(f"Original digraph: {pair} | Rule: {rule}\n")
+            sys.stdout.write("Step B: Transformation applied.\n")
+
+        if history:
+            sys.stdout.write("\nHistory (plaintext -> ciphertext):\n")
+            for p, c in history:
+                sys.stdout.write(f"{p} -> {c}\n")
+        sys.stdout.write(f"\nCiphertext so far: {ciphertext}\n")
+        sys.stdout.flush()
+
+        choice = input("Press Enter/c to continue, b to go back, q to quit: ").lower().strip()
+        if choice in ("", "c"):
+            if sub_step == 0:
+                sub_step = 1
+            else:
+                sub_step = 0
+                dig_index += 1
+        elif choice == "b":
+            if sub_step == 1:
+                sub_step = 0
+                if history and history[-1][0] == pair:
+                    history.pop()
+            elif sub_step == 0:
+                if dig_index > 0:
+                    dig_index -= 1
+                    sub_step = 1
+                else:
+                    print("Already at first step.")
+        elif choice == "q":
+            sys.stdout.write("\nDemo quit by user.\n")
+            sys.stdout.flush()
+            return
+        else:
+            print("Invalid input. Use Enter/c to continue, b to go back, q to quit.")
+
+    sys.stdout.write(f"\nFinal Ciphertext: {ciphertext}\n")
+    sys.stdout.flush()
+
+# Run demo
+#playfair_interactive_demo("HELLO")
