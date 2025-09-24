@@ -1,6 +1,14 @@
-import time, string
+import time, string, shutil, re
 import os, sys, random
 demo_registry = {}
+def get_terminal_width():
+    try:
+        return shutil.get_terminal_size().columns
+    except:
+        return 80
+width = get_terminal_width()
+RED = "\033[31m"
+RESET = "\033[0m"
 
 def register_demo(name):
     def decorator(func):
@@ -8,48 +16,107 @@ def register_demo(name):
         return func
     return decorator
 @register_demo("Caesar")
-def caesar_demo(word="hello", shift=None, delay=0.1):
+def caesar_demo(word="hello", shift=3, delay=0.21):
+    import sys, time, random, shutil, re
+
+    RED = "\033[91m"
+    RESET = "\033[0m"
+    ANSI_ESCAPE = re.compile(r'\033\[[0-9;]*m')
+
+    def visible_len(text):
+        return len(ANSI_ESCAPE.sub("", text))
+
+    def center_ansi(text):
+        width = shutil.get_terminal_size().columns
+        pad = max(0, (width - visible_len(text)) // 2)
+        return " " * pad + text
+
     if shift is None:
         shift = random.randint(1, 25)
 
-    print(f"Original word: {word}")
-    print(f"Shift amount: {shift}\n")
-
-    # Prepare top and bottom rows
-    top_row = " ".join(list(word))
     bottom_row = ["." for _ in word]
 
-    # Print top row once
-    print(top_row)
-
-    # Print bottom row (will update in place)
-    sys.stdout.write(" ".join(bottom_row))
+    # Print full initial frame (Header, blank, top row, bottom row)
+    print(center_ansi(f"Original word: {word}"))
+    print(center_ansi(f"Shift amount: {shift}"))
+    print("")  # blank line to separate header from animation rows
+    print(center_ansi(" ".join(list(word))))
+    print(center_ansi(" ".join(bottom_row)))
     sys.stdout.flush()
 
+    # number of lines in the frame we will overwrite each update:
+    # Original line, Shift line, blank line, top_row, bottom_row = 5
+    FRAME_LINES = 5
+
     for i, ch in enumerate(word):
-        if ch.isalpha():
-            start = ord('A') if ch.isupper() else ord('a')
-            original_ord = ord(ch) - start
-            new_ord = (original_ord + shift) % 26
-            new_ch = chr(start + new_ord)
-
-            # Animate this letter shifting
-            for step in range(shift + 1):
-                demo_ch = chr(start + ((original_ord + step) % 26))
-                bottom_row[i] = demo_ch
-                # Move cursor back to overwrite bottom row
-                sys.stdout.write("\r" + " ".join(bottom_row))
-                sys.stdout.flush()
-                time.sleep(delay)
-
-            # Lock in final letter
-            bottom_row[i] = new_ch
-            sys.stdout.write("\r" + " ".join(bottom_row))
-            sys.stdout.flush()
-        else:
+        if not ch.isalpha():
             bottom_row[i] = ch
+            # redraw entire frame once so cipher updates too
+            sys.stdout.write(f"\033[{FRAME_LINES}F")
+            sys.stdout.write(center_ansi(f"Original word: {word}") + "\n")
+            sys.stdout.write(center_ansi(f"Shift amount: {shift}") + "\n")
+            sys.stdout.write("\n")
+            sys.stdout.write(center_ansi(" ".join(list(word))) + "\n")
+            sys.stdout.write(center_ansi(" ".join(bottom_row)) + "\n")
+            sys.stdout.flush()
+            continue
 
-    print("\n\nFinal Ciphertext:", "".join(bottom_row))
+        start = ord('A') if ch.isupper() else ord('a')
+        original_ord = ord(ch) - start
+        new_ord = (original_ord + shift) % 26
+        new_ch = chr(start + new_ord)
+
+        for step in range(shift + 1):
+            # re-fetch width inside center_ansi; build display strings
+            demo_ch = chr(start + ((original_ord + step) % 26))
+            bottom_row[i] = demo_ch
+
+            # top row with current letter highlighted in RED
+            top_row_display = []
+            for j, c in enumerate(word):
+                if j == i:
+                    top_row_display.append(f"{RED}{c}{RESET}")
+                else:
+                    top_row_display.append(c)
+            top_row_display = " ".join(top_row_display)
+
+            # bottom row with current letter highlighted in RED
+            bottom_row_display = []
+            for j, c in enumerate(bottom_row):
+                if j == i:
+                    bottom_row_display.append(f"{RED}{c}{RESET}")
+                else:
+                    bottom_row_display.append(c)
+            bottom_row_display = " ".join(bottom_row_display)
+
+            # move cursor up whole frame and rewrite all lines with current width
+            sys.stdout.write(f"\033[{FRAME_LINES}F")
+            sys.stdout.write(center_ansi(f"Original word: {word}") + "\n")
+            sys.stdout.write(center_ansi(f"Shift amount: {shift}") + "\n")
+            sys.stdout.write("\n")
+            sys.stdout.write(center_ansi(top_row_display) + "\n")
+            sys.stdout.write(center_ansi(bottom_row_display) + "\n")
+            sys.stdout.flush()
+            time.sleep(delay)
+
+        # lock in final letter
+        bottom_row[i] = new_ch
+
+        # after finishing this letter redraw frame so final state is shown
+        sys.stdout.write(f"\033[{FRAME_LINES}F")
+        sys.stdout.write(center_ansi(f"Original word: {word}") + "\n")
+        sys.stdout.write(center_ansi(f"Shift amount: {shift}") + "\n")
+        sys.stdout.write("\n")
+        sys.stdout.write(center_ansi(" ".join(list(word))) + "\n")
+        sys.stdout.write(center_ansi(" ".join(bottom_row)) + "\n")
+        sys.stdout.flush()
+        time.sleep(0.12)
+
+    # final output below the frame
+    width = shutil.get_terminal_size().columns
+    print("\n" + "Final Ciphertext:".center(width))
+    print("".join(bottom_row).center(width))
+
 
 
 
@@ -57,74 +124,93 @@ def caesar_demo(word="hello", shift=None, delay=0.1):
     print("This is a visual demonstration of how the Caesar cipher works. \n" \
     "Each letter is shifted by the same value, which is then used to decode the message by shifting each letter back by the same amount.")
     caesar_demo("helloworld", shift=5, delay=0.09)"""
-@register_demo("Rot13")
 
-#!ROT13
+
+# ANSI color codes
+
+
+ANSI_ESCAPE = re.compile(r'\033\[[0-9;]*m')  # matches ANSI codes
+
+
+
+@register_demo("Rot13")
 def rot13_word_animation(word="helloworld"):
+    RED = "\033[91m"
+    RESET = "\033[0m"
+    ANSI_ESCAPE = re.compile(r'\033\[[0-9;]*m')
+
+    def visible_len(text):
+        return len(ANSI_ESCAPE.sub("", text))
+
+    def center_ansi(text):
+        width = shutil.get_terminal_size().columns
+        pad = max(0, (width - visible_len(text)) // 2)
+        return " " * pad + text
+
     shift = 13
     alphabet = list(string.ascii_lowercase)
-
-    # Initialize ciphered display
     ciphered_display = [" " if c != " " else " " for c in word]
 
-    print("ROT13 Demo: Letters move 13 slots through the alphabet")
-    print("Phrase : " + word)
-    print("Alphabet: " + " ".join(alphabet))
-    print("Cipher  : " + " ".join(ciphered_display))
+    last_frame_height = 0  # dynamically tracked
+
+    def draw_frame(display_phrase, display_alphabet, display_cipher):
+        nonlocal last_frame_height
+        frame_lines = [
+            center_ansi("ROT13 Demo: Letters move 13 slots through the alphabet"),
+            center_ansi("Phrase : " + display_phrase),
+            center_ansi("Alphabet: " + " ".join(display_alphabet)),
+            center_ansi("Cipher  : " + " ".join(display_cipher))
+        ]
+        if last_frame_height:
+            sys.stdout.write("\033[F" * last_frame_height)
+        for line in frame_lines:
+            sys.stdout.write("\033[2K")  # clear whole line regardless of width
+            print(line)
+        sys.stdout.flush()
+        last_frame_height = len(frame_lines)
+
+
+    # Print initial frame
+    draw_frame(word, alphabet, ciphered_display)
 
     for idx, letter in enumerate(word):
         if not letter.isalpha():
             ciphered_display[idx] = letter
-            sys.stdout.write("\033[F")  # Move cursor up one line to overwrite cipher
-            print("Cipher  : " + " ".join(ciphered_display))
+            draw_frame(word, alphabet, ciphered_display)
             continue
 
         current_index = alphabet.index(letter.lower())
 
-        # Animate letter moving 13 slots
         for step in range(1, shift + 1):
             display_alphabet = alphabet.copy()
-            for s in range(step - 1):
-                display_alphabet[(current_index + s) % 26] = "."
+            for s in range(step):
+                trail_index = (current_index + s) % 26
+                display_alphabet[trail_index] = f"{RED}{alphabet[trail_index]}{RESET}"
+
             moving_index = (current_index + step - 1) % 26
-            display_alphabet[moving_index] = alphabet[moving_index].upper()
+            display_alphabet[moving_index] = f"{RED}{alphabet[moving_index].upper()}{RESET}"
 
-            # Move cursor up 3 lines to overwrite Phrase, Alphabet, Cipher
-            sys.stdout.write("\033[F\033[F\033[F")
-
-            # Build display phrase with spaces around current letter for highlighting
             display_phrase = "".join(
-                (f" {c.upper()} " if i == idx else c) for i, c in enumerate(word)
+                (f"{RED}{c.upper()}{RESET}" if i == idx else c) for i, c in enumerate(word)
             )
 
-            print("Phrase : " + display_phrase)
-            print("Alphabet: " + " ".join(display_alphabet))
-            print("Cipher  : " + " ".join(ciphered_display))
+            draw_frame(display_phrase, display_alphabet, ciphered_display)
             time.sleep(0.1)
 
-        # Finalize cipher letter
         final_index = (current_index + shift) % 26
         ciphered_display[idx] = alphabet[final_index]
 
-        # Update final display in-place
-        sys.stdout.write("\033[F\033[F\033[F")
         display_alphabet = alphabet.copy()
         display_alphabet[final_index] = alphabet[final_index].upper()
         display_phrase = "".join(
-            (f" {c.upper()} " if i == idx else c) for i, c in enumerate(word)
+            (c.upper() if i == idx else c) for i, c in enumerate(word)
         )
-        print("Phrase : " + display_phrase)
-        print("Alphabet: " + " ".join(display_alphabet))
-        print("Cipher  : " + " ".join(ciphered_display))
+
+        draw_frame(display_phrase, display_alphabet, ciphered_display)
         time.sleep(0.15)
 
     print("\nFinal ciphered phrase:", "".join(ciphered_display))
-
-
-#rot13_word_animation("hello world")
 @register_demo("Railfence")
-
-#!RAILFENCE
 def rail_fence_demo(word="HELLOWORLD", rails=3, delay=0.4):
     print("The rail fence cipher is a transposition cipher that writes characters in a zigzag pattern across a given number of rows(rails).")
 
