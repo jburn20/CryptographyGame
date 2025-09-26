@@ -1,4 +1,4 @@
-import time, string, shutil, re
+import time, string, shutil, re, keyboard
 import os, sys, random
 demo_registry = {}
 def get_terminal_width():
@@ -17,7 +17,7 @@ def register_demo(name):
     return decorator
 @register_demo("Caesar")
 def caesar_demo(word="hello", shift=3, delay=0.21):
-    import sys, time, random, shutil, re
+    import sys, time, random, shutil, re, keyboard
 
     RED = "\033[91m"
     RESET = "\033[0m"
@@ -36,81 +36,73 @@ def caesar_demo(word="hello", shift=3, delay=0.21):
 
     bottom_row = ["." for _ in word]
 
-    # Print full initial frame (Header, blank, top row, bottom row)
+    # Initial frame
     print(center_ansi(f"Original word: {word}"))
     print(center_ansi(f"Shift amount: {shift}"))
-    print("")  # blank line to separate header from animation rows
+    print("")  # blank line
     print(center_ansi(" ".join(list(word))))
     print(center_ansi(" ".join(bottom_row)))
     sys.stdout.flush()
 
-    # number of lines in the frame we will overwrite each update:
-    # Original line, Shift line, blank line, top_row, bottom_row = 5
     FRAME_LINES = 5
+    index = 0  # controls which letter to animate
 
-    for i, ch in enumerate(word):
+    while index < len(word):
+        ch = word[index]
         if not ch.isalpha():
-            bottom_row[i] = ch
-            # redraw entire frame once so cipher updates too
-            sys.stdout.write(f"\033[{FRAME_LINES}F")
-            sys.stdout.write(center_ansi(f"Original word: {word}") + "\n")
-            sys.stdout.write(center_ansi(f"Shift amount: {shift}") + "\n")
-            sys.stdout.write("\n")
-            sys.stdout.write(center_ansi(" ".join(list(word))) + "\n")
-            sys.stdout.write(center_ansi(" ".join(bottom_row)) + "\n")
-            sys.stdout.flush()
-            continue
+            bottom_row[index] = ch
+        else:
+            start = ord('A') if ch.isupper() else ord('a')
+            original_ord = ord(ch) - start
+            new_ord = (original_ord + shift) % 26
+            new_ch = chr(start + new_ord)
 
-        start = ord('A') if ch.isupper() else ord('a')
-        original_ord = ord(ch) - start
-        new_ord = (original_ord + shift) % 26
-        new_ch = chr(start + new_ord)
+            # Animate per letter using the existing for-loop
+            for step in range(shift + 1):
+                demo_ch = chr(start + ((original_ord + step) % 26))
+                bottom_row[index] = demo_ch
 
-        for step in range(shift + 1):
-            # re-fetch width inside center_ansi; build display strings
-            demo_ch = chr(start + ((original_ord + step) % 26))
-            bottom_row[i] = demo_ch
+                # Highlight top row
+                top_row_display = " ".join(
+                    f"{RED}{c}{RESET}" if j == index else c
+                    for j, c in enumerate(word)
+                )
+                # Highlight bottom row
+                bottom_row_display = " ".join(
+                    f"{RED}{c}{RESET}" if j == index else c
+                    for j, c in enumerate(bottom_row)
+                )
 
-            # top row with current letter highlighted in RED
-            top_row_display = []
-            for j, c in enumerate(word):
-                if j == i:
-                    top_row_display.append(f"{RED}{c}{RESET}")
-                else:
-                    top_row_display.append(c)
-            top_row_display = " ".join(top_row_display)
+                sys.stdout.write(f"\033[{FRAME_LINES}F")
+                sys.stdout.write(center_ansi(f"Original word: {word}") + "\n")
+                sys.stdout.write(center_ansi(f"Shift amount: {shift}") + "\n")
+                sys.stdout.write("\n")
+                sys.stdout.write(center_ansi(top_row_display) + "\n")
+                sys.stdout.write(center_ansi(bottom_row_display) + "\n")
+                sys.stdout.flush()
+                time.sleep(delay)
 
-            # bottom row with current letter highlighted in RED
-            bottom_row_display = []
-            for j, c in enumerate(bottom_row):
-                if j == i:
-                    bottom_row_display.append(f"{RED}{c}{RESET}")
-                else:
-                    bottom_row_display.append(c)
-            bottom_row_display = " ".join(bottom_row_display)
+            bottom_row[index] = new_ch  # lock final letter
 
-            # move cursor up whole frame and rewrite all lines with current width
-            sys.stdout.write(f"\033[{FRAME_LINES}F")
-            sys.stdout.write(center_ansi(f"Original word: {word}") + "\n")
-            sys.stdout.write(center_ansi(f"Shift amount: {shift}") + "\n")
-            sys.stdout.write("\n")
-            sys.stdout.write(center_ansi(top_row_display) + "\n")
-            sys.stdout.write(center_ansi(bottom_row_display) + "\n")
-            sys.stdout.flush()
-            time.sleep(delay)
+        # Wait for Enter or B to advance/back
+        while True:
+            if keyboard.is_pressed('enter'):
+                index += 1
+                while keyboard.is_pressed('enter'):
+                    pass
+                break
+            elif keyboard.is_pressed('b') and index > 0:
+                index -= 1
+                while keyboard.is_pressed('b'):
+                    pass
+                break
+            time.sleep(0.05)
 
-        # lock in final letter
-        bottom_row[i] = new_ch
+    # final output below the frame
+    width = shutil.get_terminal_size().columns
+    print("\n" + "Final Ciphertext:".center(width))
+    print("".join(bottom_row).center(width))
 
-        # after finishing this letter redraw frame so final state is shown
-        sys.stdout.write(f"\033[{FRAME_LINES}F")
-        sys.stdout.write(center_ansi(f"Original word: {word}") + "\n")
-        sys.stdout.write(center_ansi(f"Shift amount: {shift}") + "\n")
-        sys.stdout.write("\n")
-        sys.stdout.write(center_ansi(" ".join(list(word))) + "\n")
-        sys.stdout.write(center_ansi(" ".join(bottom_row)) + "\n")
-        sys.stdout.flush()
-        time.sleep(0.12)
 
     # final output below the frame
     width = shutil.get_terminal_size().columns
@@ -212,18 +204,23 @@ def rot13_word_animation(word="helloworld"):
     print("\nFinal ciphered phrase:", "".join(ciphered_display))
 @register_demo("Railfence")
 def rail_fence_demo(word="HELLOWORLD", rails=3, delay=0.4):
-    print("The rail fence cipher is a transposition cipher that writes characters in a zigzag pattern across a given number of rows(rails).")
+    import sys, time, shutil
+
+    def center_line(text):
+        width = shutil.get_terminal_size().columns
+        return text.center(width)
+
+    print(center_line("The rail fence cipher is a transposition cipher that writes characters in a zigzag pattern across a given number of rows(rails)."))
 
     header = f"Word: {word} | Rails: {rails}"
-    print(header, "\n")
-    
+    print(center_line(header) + "\n")
 
     # Initialize rail structure
     fence = [["-" for _ in range(len(word))] for _ in range(rails)]
 
     # Print initial rails
     for row in fence:
-        print(" ".join(row))
+        print(center_line(" ".join(row)))
 
     rail = 0
     direction = 1
@@ -234,10 +231,9 @@ def rail_fence_demo(word="HELLOWORLD", rails=3, delay=0.4):
 
         # Move cursor up to the start of rail lines
         sys.stdout.write(f"\033[{rails}F")  # move cursor up N lines
-        # Print each rail line
+        # Print each rail line centered
         for row in fence:
-            print(" ".join(row))
-        # Move cursor down again so next print is after rails
+            print(center_line(" ".join(row)))
         sys.stdout.flush()
         time.sleep(delay)
 
@@ -248,7 +244,8 @@ def rail_fence_demo(word="HELLOWORLD", rails=3, delay=0.4):
 
     # Build final ciphertext
     cipher = "".join(ch for row in fence for ch in row if ch != "-")
-    print("\nFinal Ciphertext:", cipher)
+    print("\n" + center_line("Final Ciphertext: " + cipher))
+
 
 """
 
@@ -259,69 +256,65 @@ if __name__ == "__main__":
 @register_demo("Vigenere")
 def vigenere_number_animation(plaintext="HELLO WORLD", key="KEY", delay=0.8):
     """
-    Animates Vigenère cipher with numeric values.
-    
-    Shows:
-    1. Highlighted current plaintext and key letters
-    2. Their numeric values (A=0..Z=25)
-    3. Sum modulo 26
-    4. Builds ciphertext in real-time
+    Animates Vigenère cipher with numeric values without clearing entire terminal.
     """
+    import time, shutil, sys
+
+    RED = "\033[91m"
+    RESET = "\033[0m"
+    UP = "\033[F"  # Move cursor up one line
+
+    def center_line(text):
+        width = shutil.get_terminal_size().columns
+        return text.center(width)
+
     plaintext = plaintext.upper()
     key = key.upper()
     key_len = len(key)
     ciphertext = ""
-    print("Plaintext: ", end="")
-    for char in plaintext:
-        print(char, end=" ",flush=True) #! flush=True or else it wont display on powershell
-    print()
-    
-    print("Key:       ", end="")
-    for i in range(len(plaintext)):
-        aligned_key_char = key[i % key_len]
-        print(aligned_key_char, end=" ",flush=True) #! flush=True “send whatever is in the buffer to the terminal immediately”
-        time.sleep(0.35)
-    
+
+    # Initial display of plaintext and aligned key
+    aligned_key = [key[i % key_len] for i in range(len(plaintext))]
+    print(center_line("Phrase:     " + " ".join(plaintext)))
+    print(center_line("Key:        " + " ".join(aligned_key)))
+    print(center_line("Calculation:"))
+    print(center_line("Ciphertext:"))
+
     for i, p_char in enumerate(plaintext):
-        os.system('cls' if os.name == 'nt' else 'clear')
-        
-        #* Skip non-alphabet characters (space, punctuation)
         if not p_char.isalpha():
             ciphertext += p_char
             continue
-        
+
         k_char = key[i % key_len]
-        
-        #* Numeric values (A=0)
-        p_num = (ord(p_char)+ 1 )- ord('A') 
-        k_num = (ord(k_char)+ 1 )- ord('A')
+
+        # Numeric values
+        p_num = ord(p_char) - ord('A')
+        k_num = ord(k_char) - ord('A')
         c_num = (p_num + k_num) % 26
-        c_char = chr(c_num + ord('A')-1)
+        c_char = chr(c_num + ord('A'))
         ciphertext += c_char
-        
-        #* Print plaintext with highlight
-        print("Phrase:    ", end="")
-        for j, c in enumerate(plaintext):
-            print(f"[{c}]" if j == i else c, end="")
-        print()
-        
-        #* Print key with highlight
-        print("Key:       ", end="")
-        for j in range(len(plaintext)):
-            kc = key[j % key_len]
-            print(f"[{kc}]" if j == i else kc, end="")
-        print()
-        
-        #* Show numeric calculation
-        print(f"\nCalculation: {p_char}={p_num} + {k_char}={k_num} -> {c_num} = {c_char}")
-        
-        #* Show current ciphertext
-        print("\nCiphertext:", end=" ")
-        for c in ciphertext:
-            print(c, end=" ")
-        print("\n")
-        
+
+        # Build highlighted plaintext and key
+        plaintext_display = " ".join(
+            f"{RED}{c}{RESET}" if j == i else c
+            for j, c in enumerate(plaintext)
+        )
+        key_display = " ".join(
+            f"{RED}{key[j % key_len]}{RESET}" if j == i else key[j % key_len]
+            for j in range(len(plaintext))
+        )
+
+        # Move cursor up 4 lines to overwrite previous output
+        sys.stdout.write(UP*4)
+
+        print(center_line("Phrase:     " + plaintext_display))
+        print(center_line("Key:        " + key_display))
+        print(center_line(f"Calculation: {p_char}={p_num} + {k_char}={k_num} -> {c_num} = {c_char}"))
+        print(center_line("Ciphertext: " + " ".join(ciphertext)))
+
         time.sleep(delay)
+
+
 
 #! Example usage
 #vigenere_number_animation("HELLO WORLD", "KEY", delay=1)
@@ -329,40 +322,72 @@ def vigenere_number_animation(plaintext="HELLO WORLD", key="KEY", delay=0.8):
 
 #!CIRCULARBITSHIFT
 def circular_bit_shift_animation(value=178, shift=5, direction='left', delay=0.5):
-    """     
+    """
     Animates circular bit shifts for an 8-bit integer.
+    The same bit is highlighted in red as it moves across positions.
     
     value: integer 0-255
     shift: number of positions to shift
     direction: 'left' or 'right'
     delay: seconds between steps
     """
+    import os, time, shutil
+
+    RED = "\033[91m"
+    RESET = "\033[0m"
+
+    def center_line(text,shorten=False,how_short=0):
+        if shorten == True:
+            width = shutil.get_terminal_size().columns
+            width = width - how_short
+            return text.center(width)
+        width = shutil.get_terminal_size().columns
+        return text.center(width)
+        
     if not 0 <= value <= 255:
         raise ValueError("Value must be 0-255 (8-bit).")
+
+    bits = list(f"{value:08b}")  # 8-bit binary
     os.system('cls' if os.name == 'nt' else 'clear')
-    
-    bits = list(f"{value:08b}")  # Convert to 8-bit binary list
-    
-    print(f"Initial value: {value} -> {''.join(bits)}")
-    time.sleep(1.75)
-    
+
+    print(center_line(f"Initial value: {value} -> {''.join(bits)}"))
+    time.sleep(1.5)
+
+    # Track the index of the bit we want to follow
+    tracked_index = 0 if direction == 'left' else len(bits) - 1
+    tracked_bit = bits[tracked_index]
+
     for s in range(shift):
         os.system('cls' if os.name == 'nt' else 'clear')
-        
+
+        # Circular shift
         if direction == 'left':
-            shifted_bit = bits.pop(0)
-            bits.append(shifted_bit)
-        elif direction == 'right':
-            shifted_bit = bits.pop()
-            bits.insert(0, shifted_bit)
+            bit = bits.pop(0)
+            bits.append(bit)
+        else:  # right
+            bit = bits.pop()
+            bits.insert(0, bit)
+
+        # Update tracked_index after shift
+        if direction == 'left':
+            tracked_index = (tracked_index - 1) % 8
         else:
-            raise ValueError("Direction must be 'left' or 'right'.")
-        
+            tracked_index = (tracked_index + 1) % 8
+
+        # Build display with highlighted tracked bit
+        bit_display = ""
+        for i, b in enumerate(bits):
+            if i == tracked_index:
+                bit_display += f"{RED}{b}{RESET}"
+            else:
+                bit_display += b
+
         current_value = int(''.join(bits), 2)
-        print(f"Shift {s+1}/{shift} ({direction}): {''.join(bits)} -> {current_value}")
+        print(center_line(f"Shift {s+1}/{shift} ({direction}): {bit_display} -> {current_value}"))
         time.sleep(delay)
-    
-    print(f"\nFinal value after {shift} circular {direction} shift: {current_value}")
+
+    print(center_line(f"Final value after {shift} circular {direction} shift: {current_value}",shorten=True,how_short=5))
+    time.sleep(1.99)
 
 # Example usage:
 #circular_bit_shift_animation(178, shift=5, direction='left', delay=0.9)
@@ -370,6 +395,11 @@ def circular_bit_shift_animation(value=178, shift=5, direction='left', delay=0.5
 
 #!COLUMNAR
 def columnar_demo():
+    import os, time
+
+    RED = "\033[91m"
+    RESET = "\033[0m"
+
     key = "KEY"
     plaintext = "HELLO_WORLD_"   # padded with underscores
     cols = len(key)
@@ -381,57 +411,58 @@ def columnar_demo():
 
     def display(ciphertext="", highlight=None):
         """
-        highlight: tuple (row, col) -> add '!' next to the highlighted cell
+        highlight: tuple (row, col) -> highlight the cell in red
         """
         os.system("cls" if os.name == "nt" else "clear")
         print("Columnar Transposition Cipher Demo\n")
-        #print("Key:   ", " ".join(f" {ch} " for ch in key))
-        #print("Order: ", " ".join(f" {num} " for num in order))
         print(" K   E   Y")
         print(" 2   1   3")
         for r, row in enumerate(grid):
             line = []
             for c, x in enumerate(row):
                 if highlight == (r, c):
-                    line.append(f"[!{x}!]")   # mark the cell being read
+                    line.append(f"[{RED}{x}{RESET}]")   # highlight in red
                 else:
                     line.append(f"[{x}]")
             print(" ".join(line))
         print("\nCiphertext:", ciphertext)
-    #* Step 2: animate filling plaintext row by row
+
+    # Step 1: fill plaintext row by row
     for i, ch in enumerate(plaintext):
         r, c = divmod(i, cols)
         grid[r][c] = ch
-        
         display()
         time.sleep(0.3)
-    time.sleep(1) #*
-    #* Step 3: read ciphertext column by column in given order
+
+    time.sleep(1)
+
+    # Step 2: read ciphertext column by column in given order
     ciphertext = ""
     for col in sorted(range(cols), key=lambda x: order[x]):
         for row in range(rows):
             ciphertext += grid[row][col]
-            display(ciphertext,highlight=(row,col))
+            display(ciphertext, highlight=(row, col))
             time.sleep(0.45)
 
     print("\nFinal Ciphertext:", ciphertext)
+
 
 
 @register_demo("Vertical Spinner")
 
 #!VERTICAL SPINNER
 def vertical_spinner_alternating_demo(input_phrase="HELLO"):
-    """
-    Vertical spinner demo with alternating column directions:
-    - Even-indexed columns scroll up
-    - Odd-indexed columns scroll down
-    - Random spin count per column
-    - Counter above each column showing remaining spins
-    - Top/Middle/Bottom rows always distinct
-    - Real-time ciphertext assembly
-    """
+    import os, time, string, random, shutil
+
+    RED = "\033[91m"
+    RESET = "\033[0m"
+
     alphabet = string.ascii_uppercase
     input_phrase = input_phrase.upper()
+
+    def center_line(text):
+        width = shutil.get_terminal_size().columns
+        return text.center(width)
 
     # Initialize columns with random shifts
     columns = []
@@ -461,45 +492,42 @@ def vertical_spinner_alternating_demo(input_phrase="HELLO"):
 
         while col['counter'] > 0:
             os.system("cls" if os.name == "nt" else "clear")
-            print("Vertical Spinner Cipher Demo\n")
+            print(center_line("Vertical Spinner Cipher Demo\n"))
 
             # Display counters
-            print("Counter: ", end="")
+            counter_line = "Counter: "
             for c_num, c in enumerate(columns):
                 if c_num == col_num:
-                    print(f"{c['counter']:2} ", end="")
+                    counter_line += f"{c['counter']:2} "
                 else:
-                    print(" - ", end="")
-            print("\n")
+                    counter_line += " - "
+            print(center_line(counter_line + "\n"))
 
-            # Display rows
+            # Display rows with highlight for current middle letter
             for row_name in ["top", "middle", "bottom"]:
-                print(f"{row_name.capitalize():<8}", end="")
+                row_text = f"{row_name.capitalize():<8}"
                 for c_num, c in enumerate(columns):
-                    if c_num == col_num and row_name == "middle":
-                        print(f"{c[row_name]}!", end=" ")
+                    if c_num == col_num: #and row_name == "middle":
+                        row_text += f"{RED}{c[row_name]}{RESET} "
                     else:
-                        print(f"{c[row_name]}", end=" ")
-                print()
+                        row_text += f"{c[row_name]} "
+                print(center_line(row_text))
             print()
-            print(f"Ciphertext: {ciphertext}\n")  # show live ciphertext
+            print(center_line(f"Ciphertext: {ciphertext}\n"))
             time.sleep(0.3)
 
             # Shift column
             if shift_up:
-                # Upward shift
                 col['top'] = col['middle']
                 col['middle'] = col['bottom']
                 col['idx'] = (col['idx'] + 1) % 26
                 col['bottom'] = alphabet[(alphabet.index(col['middle']) + 1) % 26]
             else:
-                # Downward shift
                 col['bottom'] = col['middle']
                 col['middle'] = col['top']
                 col['idx'] = (col['idx'] - 1) % 26
                 col['top'] = alphabet[(alphabet.index(col['middle']) - 1) % 26]
 
-            # Decrement counter
             col['counter'] -= 1
 
         # Append final middle value to ciphertext
@@ -507,14 +535,17 @@ def vertical_spinner_alternating_demo(input_phrase="HELLO"):
 
     # Final display
     os.system("cls" if os.name == "nt" else "clear")
-    print("Vertical Spinner Cipher Demo (Alternating)\n")
-    print(f"Ciphertext: {ciphertext}\n")
+    print(center_line("Vertical Spinner Cipher Demo\n"))
     for row_name in ["top", "middle", "bottom"]:
-        print(f"{row_name.capitalize():<8}", end="")
+        row_text = f"{row_name.capitalize():<8}"
         for c in columns:
-            print(f"{c[row_name]}", end=" ")
-        print()
-    print("\nDone! Ciphertext assembled.")
+            row_text += f"{c[row_name]} "
+        print(center_line(row_text))
+    print()
+    print(center_line(f"Ciphertext: {RED}{ciphertext}{RESET}"))
+    time.sleep(3.5)
+
+
 @register_demo("Playfair")
 
 #!PLAYFAIR
@@ -522,6 +553,11 @@ def vertical_spinner_alternating_demo(input_phrase="HELLO"):
 
 
 def playfair_interactive_demo(plaintext="HELLO"):
+    import os, sys
+
+    RED = "\033[91m"
+    RESET = "\033[0m"
+
     # 5x5 Playfair key grid (drop J)
     grid = [
         ['P','L','A','Y','F'],
@@ -544,7 +580,7 @@ def playfair_interactive_demo(plaintext="HELLO"):
             line = ""
             for c, val in enumerate(row):
                 if highlight and (r, c) in highlight:
-                    line += f"{val}! "
+                    line += f"{RED}{val}{RESET}  "  # red highlight
                 else:
                     line += f"{val}  "
             lines.append(line)
