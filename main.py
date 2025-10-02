@@ -56,12 +56,16 @@ def caesar():
     word = random_picker() 
     new = []
     for i in word:
-        if ord(i) + shift >= 123: 
+        if i == " ":
+            newchar = i
+            new.append(newchar)
+        elif ord(i) + shift >= 123: 
             diff = (ord(i) + shift) - 123 #* handles non alphabetical ord
             newchar = 97 + diff #* 97 = a in ord() form, serves as reset if we go past z
+            new.append(chr(newchar))
         else: 
             newchar = ord(i) + shift #* normal shifting
-        new.append(chr(newchar)) #* convert num to char, append char to new
+            new.append(chr(newchar)) #* convert num to char, append char to new
     print("CIPHER:","".join(new)) #* turn list into string
     ans = input("What is the word?\n").strip()
     while ans != word:
@@ -74,13 +78,17 @@ def rotThirteen():
     word = random_picker()
     new = []
     for i in word:
-        if ord(i) + shift >= 123:
+        if i == " ":
+            
+            new.append(i)
+        elif ord(i) + shift >= 123:
             diff = (ord(i) + shift) - 123
             newchar = 97 + diff
+            new.append((chr(newchar)))
         else:
             newchar = ord(i) + shift
-        new.append((chr(newchar)))
-    print("CIPHER: ","".join(new))
+            new.append((chr(newchar)))
+    print("CIPHER:","".join(new))
     ans = input("What is the word?\n").strip()
     while ans != word:
         ans = input("Incorrect. Please try again: ")
