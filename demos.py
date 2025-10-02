@@ -460,10 +460,14 @@ def vertical_spinner_alternating_demo(input_phrase="HELLO"):
     alphabet = string.ascii_uppercase
     input_phrase = input_phrase.upper()
 
-    def center_line(text):
-        width = shutil.get_terminal_size().columns
-        return text.center(width)
-
+    def center_line(text,resize=0):
+        if resize==True:
+            width +- resize
+            return width
+        else:
+            width = shutil.get_terminal_size().columns
+            return text.center(width)
+            
     # Initialize columns with random shifts
     columns = []
     for ch in input_phrase:
@@ -534,16 +538,36 @@ def vertical_spinner_alternating_demo(input_phrase="HELLO"):
         ciphertext += col['middle']
 
     # Final display
+    # Final display: middle letters (ciphertext) in red, others normal
+
+    # Helper to compute visible length ignoring ANSI codes
+    def visible_len(text):
+        return len(re.sub(r'\033\[[0-9;]*m', '', text))
+
+    # Center text while ignoring ANSI codes
+    def center_ansi(text):
+        width = shutil.get_terminal_size().columns
+        pad = max(0, (width - visible_len(text)) // 2)
+        return " " * pad + text
+
+    # Final display: middle letters in red, others normal
     os.system("cls" if os.name == "nt" else "clear")
-    print(center_line("Vertical Spinner Cipher Demo\n"))
+    print(center_ansi("Vertical Spinner Cipher Demo\n"))
+
     for row_name in ["top", "middle", "bottom"]:
         row_text = f"{row_name.capitalize():<8}"
         for c in columns:
-            row_text += f"{c[row_name]} "
-        print(center_line(row_text))
+            if row_name == "middle":
+                row_text += f"{RED}{c[row_name]}{RESET} "
+            else:
+                row_text += f"{c[row_name]} "
+        print(center_ansi(row_text))
+
     print()
-    print(center_line(f"Ciphertext: {RED}{ciphertext}{RESET}"))
+    print(center_ansi(f"Ciphertext: {RED}{ciphertext}{RESET}"))
     time.sleep(3.5)
+
+
 
 
 @register_demo("Playfair")
