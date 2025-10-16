@@ -1,4 +1,4 @@
-import time, string, shutil, re, keyboard, os, sys, random
+import time, string, shutil, re, os, sys, random
 from utils import  UP, RED, RESET, get_terminal_width, center_text, clear_screen, ANSI_ESCAPE
 
 demo_registry = {}
