@@ -5,6 +5,8 @@ import re
 
 # --- ANSI Color Constants ---
 RED = "\033[91m"  # Brighter red for better visibility
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
 RESET = "\033[0m"
 ANSI_ESCAPE = re.compile(r'\033\[[0-9;]*m')
 UP = "\033[F" 

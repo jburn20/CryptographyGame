@@ -1,20 +1,7 @@
 import os, time, shutil
 import re
 import random
-
-# Colors
-RED = "\033[91m"
-GREEN = "\033[92m"
-RESET = "\033[0m"
-
-# ANSI-aware centering
-def visible_len(text):
-    return len(re.sub(r'\033\[[0-9;]*m', '', text))
-
-def center_ansi(text):
-    width = shutil.get_terminal_size().columns
-    pad = max(0, (width - visible_len(text)) // 2)
-    return " " * pad + text
+from utils import RED, GREEN, RESET, center_text, clear_screen, ANSI_ESCAPE
 
 # Bitwise XOR animation for a single byte
 def xor_byte_animation(byte_val, xor_val, delay=0.45):
@@ -52,17 +39,17 @@ def xor_byte_animation(byte_val, xor_val, delay=0.45):
             highlighted_result += f"{color}{bit}{RESET}"
         highlighted_result += "_" * (8 - len(result))
 
-        os.system("cls" if os.name == "nt" else "clear")
-        print(center_ansi("XOR Round Animation\n"))
-        print(center_ansi(f"Original byte: {highlighted_a}"))
-        print(center_ansi(f"XOR value    : {highlighted_b}\n"))
-        print(center_ansi(f"Result so far: {highlighted_result}"))
+        clear_screen()
+        print(center_text("XOR Round Animation\n"))
+        print(center_text(f"Original byte: {highlighted_a}"))
+        print(center_text(f"XOR value    : {highlighted_b}\n"))
+        print(center_text(f"Result so far: {highlighted_result}"))
         time.sleep(delay)
 
     final_val = byte_val ^ xor_val
-    os.system("cls" if os.name == "nt" else "clear")
-    print(center_ansi("XOR Round Animation - Byte Result\n"))
-    print(center_ansi(f"{GREEN if final_val else RED}{final_val:08b}{RESET} (decimal {final_val})"))
+    clear_screen()
+    print(center_text("XOR Round Animation - Byte Result\n"))
+    print(center_text(f"{GREEN if final_val else RED}{final_val:08b}{RESET} (decimal {final_val})"))
     time.sleep(0.5)
     return final_val
 
@@ -71,7 +58,7 @@ def xor_byte_animation(byte_val, xor_val, delay=0.45):
 def xor_round_animated(state, round_val=0x1F):
     new_state = []
     for idx, byte in enumerate(state):
-        print(center_ansi(f"Processing byte {idx+1}/{len(state)}"))
+        print(center_text(f"Processing byte {idx+1}/{len(state)}"))
         time.sleep(0.5)
         new_state.append(xor_byte_animation(byte, round_val))
     return new_state
@@ -99,8 +86,8 @@ def rotate_animation(state, direction="left", n=1, delay=0.3):
     new_state = state[:]  # make a copy so original isn't affected until return
     direction = direction.lower()
 
-    os.system("cls" if os.name == "nt" else "clear")
-    print(center_ansi(f"Rotation {direction.upper()} Animation\n"))
+    clear_screen()
+    print(center_text(f"Rotation {direction.upper()} Animation\n"))
 
     for step in range(n):
         # Perform actual rotation
@@ -117,16 +104,16 @@ def rotate_animation(state, direction="left", n=1, delay=0.3):
             ascii_line += f"{color}{chr(val)}{RESET} "
             val_line += f"{color}{val:3}{RESET} "
 
-        os.system("cls" if os.name == "nt" else "clear")
-        print(center_ansi(f"Rotation {direction.upper()} Animation (step {step+1}/{n})\n"))
-        print(center_ansi(ascii_line))
-        print(center_ansi(val_line))
+        clear_screen()
+        print(center_text(f"Rotation {direction.upper()} Animation (step {step+1}/{n})\n"))
+        print(center_text(ascii_line))
+        print(center_text(val_line))
         time.sleep(delay)
 
-    os.system("cls" if os.name == "nt" else "clear")
-    print(center_ansi(f"Rotation {direction.upper()} Complete!\n"))
+    clear_screen()
+    print(center_text(f"Rotation {direction.upper()} Complete!\n"))
     final_ascii = " ".join(chr(x) for x in new_state)
-    print(center_ansi(f"{GREEN}{final_ascii}{RESET}\n"))
+    print(center_text(f"{GREEN}{final_ascii}{RESET}\n"))
     time.sleep(1)
 
     return new_state
@@ -136,17 +123,17 @@ def shuffle_animation(state, round_number=1, delay=1.5):
     Educational shuffle animation for the Mini Hash Demo.
     Shows original row → arrows → shuffled row.
     """
-    os.system("cls" if os.name == "nt" else "clear")
+    clear_screen()
     
-    print(center_ansi(f"STATE SHUFFLE\n"))
+    print(center_text(f"STATE SHUFFLE\n"))
     
     # Original row
     original_row = "  ".join(chr(c) for c in state)
-    print(center_ansi(original_row))
+    print(center_text(original_row))
     
     # Arrows
     arrows_row = "  ".join("↓" for _ in state)
-    print(center_ansi(arrows_row))
+    print(center_text(arrows_row))
     
     # Deterministic shuffle for reproducibility
     shuffled_state = state[:]
@@ -154,37 +141,37 @@ def shuffle_animation(state, round_number=1, delay=1.5):
     
     # Shuffled row (highlight green)
     shuffled_row = "  ".join(f"{GREEN}{chr(c)}{RESET}" for c in shuffled_state)
-    print(center_ansi(shuffled_row))
+    print(center_text(shuffled_row))
     
     print()
-    print(center_ansi(f"{GREEN}Shuffling spreads data across positions for better diffusion.{RESET}\n"))
+    print(center_text(f"{GREEN}Shuffling spreads data across positions for better diffusion.{RESET}\n"))
     time.sleep(delay)
     
     return shuffled_state
 
 # Animate non-XOR transformations
 def animate_step(state, transform_name, new_state):
-    os.system("cls" if os.name == "nt" else "clear")
-    print(center_ansi(f"Mini Hash Demo - {transform_name}\n"))
+    clear_screen()
+    print(center_text(f"Mini Hash Demo - {transform_name}\n"))
     row_text = ""
     for val in new_state:
         color = RED if val > 127 else GREEN
         row_text += f"{color}{val:3}{RESET} "
-    print(center_ansi(row_text))
+    print(center_text(row_text))
     time.sleep(1)
     return new_state
 
 # Display current state in ASCII and binary
 def display_state(state):
-    os.system("cls" if os.name == "nt" else "clear")
-    print(center_ansi("Current State\n"))
+    clear_screen()
+    print(center_text("Current State\n"))
     ascii_line = "ASCII:  "
     binary_line = "Binary: "
     for val in state:
         ascii_line += f"{chr(val)} "
         binary_line += f"{val:08b} "
-    print(center_ansi(ascii_line))
-    print(center_ansi(binary_line))
+    print(center_text(ascii_line))
+    print(center_text(binary_line))
     time.sleep(1)
 
 # Main interactive hash demo
@@ -221,8 +208,7 @@ def mini_hash_demo():
             n = int(input("Rotate by how many positions? ") or 1)
             current_state = rotate_animation(current_state, "right",n)
         elif name == "Shuffle state":
-            
-        # Use educational shuffle animation
+            # Use educational shuffle animation
             round_num = random.randint(1, 100)  # just to give a seed for demo
             current_state = shuffle_animation(current_state, round_num)
         else:
@@ -230,10 +216,10 @@ def mini_hash_demo():
 
     # Final hash as hex
     final_hash = "".join(f"{x:02X}" for x in current_state)
-    os.system("cls" if os.name == "nt" else "clear")
-    print(center_ansi("Mini Hash Demo - Final Hash\n"))
-    print(center_ansi(f"{RED}{final_hash}{RESET}"))
+    clear_screen()
+    print(center_text("Mini Hash Demo - Final Hash\n"))
+    print(center_text(f"{RED}{final_hash}{RESET}"))
     time.sleep(3)
 
-# Run demo
-mini_hash_demo()
+if __name__ == "__main__":
+    mini_hash_demo()

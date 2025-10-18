@@ -1,5 +1,5 @@
 import time, string, shutil, re, os, sys, random
-from utils import  UP, RED, RESET, get_terminal_width, center_text, clear_screen, ANSI_ESCAPE
+from utils import UP, RED, RESET, GREEN, YELLOW, get_terminal_width, center_text, clear_screen, ANSI_ESCAPE
 
 demo_registry = {}
 def register_demo(name):
@@ -11,9 +11,6 @@ def register_demo(name):
 @register_demo("Caesar")
 
 def caesar_demo(word="hello", shift=3, delay=0.21):
-    def visible_len(text):
-        return len(ANSI_ESCAPE.sub("", text))
-
     if shift is None:
         shift = random.randint(1, 25)
 

@@ -50,6 +50,48 @@ def vigenere_encrypt(text: str, key: str) -> str:
             out.append(ch)
     return "".join(out)
 
+def beaufort_encrypt(text: str, key: str) -> str:
+    key = "".join(k for k in key.upper() if k.isalpha())
+    if not key:
+        return _to_upper_letters_and_spaces(text)
+    out = []
+    ki = 0
+    for ch in _to_upper_letters_and_spaces(text):
+        if ch == " ":
+            out.append(ch)
+        elif ch.isalpha():
+            shift = ord(key[ki % len(key)]) - ord('A')
+            base = ord('A')
+            # Beaufort: (K - P) mod 26 instead of (P + K) mod 26
+            out.append(chr(base + ((shift - (ord(ch) - base)) % 26)))
+            ki += 1
+        else:
+            out.append(ch)
+    return "".join(out)
+
+def autokey_encrypt(text: str, primer: str) -> str:
+    primer = "".join(k for k in primer.upper() if k.isalpha())
+    if not primer:
+        primer = "A"
+    text_u = _to_upper_letters_and_spaces(text)
+    # Build full key: primer + plaintext letters (no spaces)
+    plaintext_letters = [ch for ch in text_u if ch.isalpha()]
+    full_key = primer + "".join(plaintext_letters)
+    
+    out = []
+    ki = 0
+    for ch in text_u:
+        if ch == " ":
+            out.append(ch)
+        elif ch.isalpha():
+            shift = ord(full_key[ki]) - ord('A')
+            base = ord('A')
+            out.append(chr(base + ((ord(ch) - base + shift) % 26)))
+            ki += 1
+        else:
+            out.append(ch)
+    return "".join(out)
+
 def affine_encrypt(text: str, a: int, b: int) -> str:
     out = []
     for ch in _to_upper_letters_and_spaces(text):
@@ -62,23 +104,16 @@ def affine_encrypt(text: str, a: int, b: int) -> str:
             out.append(ch)
     return "".join(out)
 
-def keyword_substitution_encrypt(text: str, keyword: str) -> str:
-    seen = set()
-    key_clean = []
-    for ch in keyword.upper():
-        if ch.isalpha() and ch not in seen:
-            key_clean.append(ch); seen.add(ch)
-    for ch in string.ascii_uppercase:
-        if ch not in seen:
-            key_clean.append(ch); seen.add(ch)
-    subst = key_clean
+def monoalphabetic_substitution_encrypt(text: str) -> str:
+    """Encrypt using fixed substitution alphabet QWERTYUIOPASDFGHJKLZXCVBNM"""
+    substitution_alphabet = "QWERTYUIOPASDFGHJKLZXCVBNM"
     out = []
     for ch in _to_upper_letters_and_spaces(text):
         if ch == " ":
             out.append(ch)
         elif ch.isalpha():
             idx = ord(ch) - ord('A')
-            out.append(subst[idx])
+            out.append(substitution_alphabet[idx])
         else:
             out.append(ch)
     return "".join(out)
@@ -96,6 +131,23 @@ def rail_fence_encrypt(text: str, rails: int) -> str:
         if rail == 0 or rail == rails - 1:
             direction *= -1
     return "".join("".join(row) for row in fence)
+
+def scytale_encrypt(text: str, diameter: int) -> str:
+    # Scytale is columnar transposition without key sorting
+    text_u = _to_upper_letters_and_spaces(text).replace(" ", "")
+    if diameter <= 1:
+        return text_u
+    
+    rows = (len(text_u) + diameter - 1) // diameter
+    ciphertext = []
+    
+    # Read columns in order (no permutation like columnar)
+    for col in range(diameter):
+        for row in range(rows):
+            idx = row * diameter + col
+            if idx < len(text_u):
+                ciphertext.append(text_u[idx])
+    return "".join(ciphertext)
 
 def _rank_key_to_permutation(key: str):
     paired = sorted([(ch, i) for i, ch in enumerate(key)], key=lambda x: (x[0], x[1]))
@@ -151,6 +203,14 @@ def _gen_vigenere():
     key_len = random.randint(3, 6)
     return {"key": "".join(random.choice(string.ascii_uppercase) for _ in range(key_len))}
 
+def _gen_beaufort():
+    key_len = random.randint(3, 6)
+    return {"key": "".join(random.choice(string.ascii_uppercase) for _ in range(key_len))}
+
+def _gen_autokey():
+    primer_len = random.randint(1, 3)
+    return {"primer": "".join(random.choice(string.ascii_uppercase) for _ in range(primer_len))}
+
 def _gen_columnar():
     cols = random.randint(3, 5)
     return {"key": "".join(random.choice(string.ascii_uppercase) for _ in range(cols))}
@@ -159,29 +219,33 @@ def _gen_affine():
     coprime_choices = [1,3,5,7,9,11,15,17,19,21,23,25]
     return {"a": random.choice(coprime_choices), "b": random.randint(0, 25)}
 
-def _gen_keyword():
-    kw_len = random.randint(4, 7)
-    return {"keyword": "".join(random.choice(string.ascii_uppercase) for _ in range(kw_len))}
+def _gen_monoalphabetic():
+    return {}
 
 def _gen_rails():
     return {"rails": random.randint(3, 4)}
+
+def _gen_scytale():
+    return {"diameter": random.randint(3, 5)}
 
 def _gen_circular():
     return {"shift": random.randint(1, 7), "direction": random.choice(['left', 'right'])}
 
 CIPHERS = {
-    # Easy
+    # Easy (3 points) - dcode.com shows full solutions
     "ROT13": {"difficulty": "easy", "encrypt": lambda t, p: rot13_encrypt(t), "params": _gen_none},
     "Caesar": {"difficulty": "easy", "encrypt": lambda t, p: caesar_encrypt(t, p["shift"]), "params": _gen_caesar},
     "Atbash": {"difficulty": "easy", "encrypt": lambda t, p: atbash_encrypt(t), "params": _gen_none},
-    # Medium
-    "Rail Fence": {"difficulty": "medium", "encrypt": lambda t, p: rail_fence_encrypt(t, p["rails"]), "params": _gen_rails},
-    "Vigenere": {"difficulty": "medium", "encrypt": lambda t, p: vigenere_encrypt(t, p["key"]), "params": _gen_vigenere},
+    "Rail Fence": {"difficulty": "easy", "encrypt": lambda t, p: rail_fence_encrypt(t, p["rails"]), "params": _gen_rails},
+    "Vigenere": {"difficulty": "easy", "encrypt": lambda t, p: vigenere_encrypt(t, p["key"]), "params": _gen_vigenere},
+    "Beaufort": {"difficulty": "easy", "encrypt": lambda t, p: beaufort_encrypt(t, p["key"]), "params": _gen_beaufort},
+    "Scytale": {"difficulty": "easy", "encrypt": lambda t, p: scytale_encrypt(t, p["diameter"]), "params": _gen_scytale},
+    "Circular Bit Shift": {"difficulty": "easy", "encrypt": lambda t, p: circular_bit_shift_encrypt(t, p["shift"], p["direction"]), "params": _gen_circular},
+    # Hard (5 points) - dcode.com limited/no solutions
     "Columnar": {"difficulty": "hard", "encrypt": lambda t, p: columnar_encrypt(t, p["key"]), "params": _gen_columnar},
-    "Circular Bit Shift": {"difficulty": "medium", "encrypt": lambda t, p: circular_bit_shift_encrypt(t, p["shift"], p["direction"]), "params": _gen_circular},
-    # Hard
     "Affine": {"difficulty": "hard", "encrypt": lambda t, p: affine_encrypt(t, p["a"], p["b"]), "params": _gen_affine},
-    "Keyword Substitution": {"difficulty": "hard", "encrypt": lambda t, p: keyword_substitution_encrypt(t, p["keyword"]), "params": _gen_keyword},
+    "Monoalphabetic Substitution Cipher": {"difficulty": "hard", "encrypt": lambda t, p: monoalphabetic_substitution_encrypt(t), "params": _gen_monoalphabetic},
+    "Autokey": {"difficulty": "hard", "encrypt": lambda t, p: autokey_encrypt(t, p["primer"]), "params": _gen_autokey},
 }
 
 def choose_difficulty_for_level(level: int, easy_levels: int = 1, medium_levels: int = 1) -> str:
