@@ -50,17 +50,17 @@ def scale_to_fit(frame_text):
 
 def animate(frames, delay=0.07, loop=1):
     """Play animation frames"""
-    clear = "cls" if os.name == "nt" else "clear"
+    sys.stdout.write("\033[H")
     
     for _ in range(loop):
         for frame in frames:
-            os.system(clear)
+            sys.stdout.write("\033[H")
             print(scale_to_fit(frame))
             sys.stdout.flush()
             time.sleep(delay)
     
     # Show final frame
-    os.system(clear)
+    sys.stdout.write("\033[H")
     print(scale_to_fit(frames[-1]))
 
 if __name__ == "__main__":

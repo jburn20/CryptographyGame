@@ -1,0 +1,47 @@
+10/18/25 
+Major Features:
+- Add Beaufort, Autokey, and Scytale ciphers with parameter generation
+- Implement 2-tier hint system: type reveal (⌈pts/2⌉) and full reveal (→1pt)
+- Add star-based prize system (1-5 stars) with ASCII badge display
+- Integrate terminal ASCII animations via prize.py and prizes/ folder
+
+Cipher Improvements:
+- Add beaufort_encrypt(), autokey_encrypt(), scytale_encrypt() to ciphers.py
+- Update CIPHERS registry: 8 easy, 4 hard total
+- Add parameter input handlers for new ciphers in main.py
+
+Prize System:
+- Award stars based on total score (0-4pts: 1★, 5-9: 2★, 10-14: 3★, 15-19: 4★, 20+: 5★)
+- Map stars to animations: peter, dance2, linuxtype, nerd, squid
+- Add prize.py script for terminal animation playback
+- Include 7 prize animations in prizes/ folder
+
+Game Flow:
+- Show badge display on game completion
+- Prompt for fullscreen before animation
+- Add dev mode for testing prize scenarios and animations
+
+Dev Tools:
+- Add [D] command to award points in difficulty selection
+- Add dev menu [9] with 8 test options:
+  - Test individual star levels (1-5)
+  - Test custom scores
+  - Test all badges in game context
+  - Play/select animations from folder
+- Add DEV_MODE and DEV_SHOW_CIPHER toggles
+
+Content & Fixes:
+- Expand wordlist.txt from 50 to 100 crypto-themed phrases
+- Fix hashdemo.py indentation and add __main__ guard
+- Add GREEN and YELLOW color constants to utils.py
+- Update .gitignore for docs/ folder and test files
+- Extend linuxtype.json to 32 frames (4x loop)
+
+Files Changed:
+- ciphers.py: +3 ciphers, +3 generators (106 additions)
+- main.py: +prize system, +hints, +dev mode (605 additions)
+- wordlist.txt: +50 phrases
+- prize.py: +animation player (new file)
+- prizes/: +7 JSON animation files (new folder)
+- hashdemo.py, demos.py, utils.py: minor fixes
+- .gitignore: +docs/, +test_*.py

@@ -5,11 +5,99 @@ Program that teaches student cryptography
 from demos import demo_registry
 import random, os, sys, string, time, subprocess
 from ciphers import generate_round, choose_difficulty_for_level, CIPHERS, generate_specific_round
-from utils import GREEN, YELLOW, RED, RESET, clear_screen
+# Import the new helper functions and GREY color
+from utils import GREEN, YELLOW, RED, GREY, RESET, clear_screen, center_text, get_terminal_width
 
 # --- Dev toggles ---
 DEV_SHOW_CIPHER = False  # Show cipher names during gameplay
 DEV_MODE = True  # Enable dev menu for testing features
+
+# --- DELETED the old hard-coded STORE_ITEMS dictionary ---
+
+
+# --- NEW: Dynamic Storefront Builder ---
+def build_storefront_items():
+    """
+    Scans the 'prizes' directory and builds the store item list.
+    Defaults all .json files to 1 point.
+    Applies manual prices from the MANUAL_PRICES dict.
+    """
+    
+    # ---
+    # --- EDIT THIS DICTIONARY TO MANUALLY SET 3 OR 5 POINT PRICES ---
+    # ---
+    MANUAL_PRICES = {
+        'prizes/linuxtype.json': 3,
+        'prizes/game!.json': 3,
+        'prizes/multibond.json': 3,
+        'prizes/ramen.json': 3,
+        'prizes/round.json': 3,
+        'prizes/dance2.json': 3,
+        'prizes/juggler.json': 3,
+        'prizes/lookrighthere': 3,
+        'prizes/spinning': 3,
+        'prizes/exasperated.json': 3,
+        'prizes/lockin.json': 3,
+        'prizes/shymariachi.json': 5,
+        'prizes/nerd.json': 5,
+        'prizes/squid.json': 5,
+        'prizes/newhope.json': 5,
+        'prizes/static.json': 5,
+        'prizes/swtor.json': 5,
+        'prizes/keyboard.json': 5,
+        'prizes/roguedata.json': 5,
+
+    }
+    # ---
+    # --- END OF MANUAL CONFIGURATION ---
+    # ---
+
+    store_items = {}
+    item_key = 1  # Start item numbering at 1
+    prizes_dir = 'prizes'
+    
+    # Ensure prizes directory exists
+    if not os.path.exists(prizes_dir):
+        return {} # Return empty store if no prize folder
+
+    # --- Step 1: Add all 1-point default items ---
+    # We sort the files alphabetically to ensure a consistent order
+    try:
+        all_files = sorted(os.listdir(prizes_dir))
+    except FileNotFoundError:
+        return {} # Again, return empty if path is invalid
+        
+    for filename in all_files:
+        if filename.endswith('.json'):
+            file_path = os.path.join(prizes_dir, filename).replace("\\", "/") # Normalize path
+            
+            # ONLY add as a 1-point item if it's NOT in the manual list
+            if file_path not in MANUAL_PRICES:
+                store_items[str(item_key)] = {
+                    'name': file_path,
+                    'cost': 1,
+                    'file': file_path
+                }
+                item_key += 1
+                
+    # --- Step 2: Add all manually-priced items ---
+    # This loop ensures they are added *after* the defaults, with correct keys
+    # We sort these too, for consistency
+    for file_path, cost in sorted(MANUAL_PRICES.items()):
+        # Check if the manually-priced file actually exists
+        if os.path.exists(file_path):
+            store_items[str(item_key)] = {
+                'name': file_path,
+                'cost': cost,
+                'file': file_path
+            }
+            item_key += 1
+        else:
+            print(f"[Store Warning] Manual price set for missing file: {file_path}")
+
+    return store_items
+# --- End of new function ---
+
 
 def _diff_color(difficulty):
     if difficulty == "easy":
@@ -53,50 +141,103 @@ def smart_word_picker(cipher_name):
         # Easy ciphers - work with any length
         return random.choice(words)
 
-def calculate_stars(score, rounds_played=None):
-    """Calculate star rating (1-5) based purely on total score"""
-    # Purely points-based system for scalability
-    if score >= 20:      # Excellent
-        return 5
-    elif score >= 15:    # Great
-        return 4
-    elif score >= 10:    # Good
-        return 3
-    elif score >= 5:     # Decent
-        return 2
-    else:                # Participation (0-4 points)
-        return 1
 
-def get_badge_display(stars):
-    """Return simple badge display with asterisks"""
-    badges = ["[ ]", "[ ]", "[ ]", "[ ]", "[ ]"]
-    for i in range(min(stars, 5)):
-        badges[i] = "[*]"
-    return "  ".join(badges)
-
-def award_prize_animation(score, stars):
-    """Show prize animation based on score/stars"""
-    # Map stars to animation files
-    prize_map = {
-        1: "prizes/peter.json",
-        2: "prizes/dance2.json",
-        3: "prizes/linuxtype.json",
-        4: "prizes/nerd.json",
-        5: "prizes/squid.json"
-    }
+# --- Storefront Function (Now calls build_storefront_items) ---
+def run_storefront(total_score):
+    """
+    Displays the post-game storefront UI.
+    Allows the user to spend 'total_score' as currency to buy animations.
+    """
+    current_score = total_score
     
-    animation_file = prize_map.get(stars, "prizes/peter.json")
-    
-    # Check if file exists
-    if not os.path.exists(animation_file):
-        print(f"[!] Prize animation not found: {animation_file}")
+    # --- MODIFIED: Build store items dynamically ---
+    STORE_ITEMS = build_storefront_items()
+    if not STORE_ITEMS:
+        print(center_text(f"{RED}No items found in 'prizes' directory!{RESET}"))
+        input(center_text("Press Enter to continue..."))
         return
-    
-    # Run the prize animation
-    try:
-        subprocess.run([sys.executable, "prize.py", animation_file])
-    except Exception as e:
-        print(f"[!] Could not run prize animation: {e}")
+
+    # Sort items by cost for display
+    sorted_items = sorted(STORE_ITEMS.items(), key=lambda item: item[1]['cost'])
+
+    while True:
+        clear_screen()
+        # --- Corrected Centered Headers ---
+        print(center_text("=" * 60))
+        print(center_text("THEATER"))
+        print(center_text("=" * 60))
+        print(center_text(f"Your Points: {YELLOW}{current_score}{RESET}"))
+        print("\n")
+        
+        # --- New Color Key ---
+        print(center_text(f"Cost Key: {GREEN}1 Point{RESET} | {YELLOW}3 Points{RESET} | {RED}5 Points{RESET}"))
+        print(center_text("-" * 45))
+        print("\nAvailable Animations:\n")
+
+        # --- New Single-Column List ---
+        for key, item in sorted_items:
+            cost = item['cost']
+            name = item['name']
+            
+            # Determine color by cost
+            if cost == 1:
+                color = GREEN
+            elif cost == 3:
+                color = YELLOW
+            else:
+                color = RED
+            
+            # Override color if unaffordable
+            if current_score < cost:
+                color = GREY
+                
+            display_text = f"{color}[{key}] {name} ({cost} pt){RESET}"
+            print("    " + display_text) # Indent for clarity
+        
+        # --- Handle User Input (FIXED Centering) ---
+        print("\n" * 2)
+        
+        # Print the prompt centered on its own line
+        prompt_text = "Enter an item number to buy, or [Q] to quit:"
+        print(prompt_text)
+        
+        # Center the input cursor/prompt on the next line
+        cursor_prompt = "> "
+        choice = input(cursor_prompt).strip().lower()
+
+        if choice == 'q':
+            break # Exit the storefront loop
+
+        if choice in STORE_ITEMS:
+            item = STORE_ITEMS[choice]
+            if current_score >= item['cost']:
+                # Purchase successful
+                current_score -= item['cost']
+                clear_screen()
+                print(center_text(f"Purchased a ticket for {item['name']} at {item['cost']} point(s)!"))
+                print(center_text(f"You have {current_score} points remaining."))
+                input(center_text("\nPress Enter to watch your animation..."))
+                
+                # Run the prize animation
+                try:
+                    subprocess.run([sys.executable, "prize.py", item['file']])
+                except Exception as e:
+                    print(center_text(f"[!] Could not run prize animation: {e}"))
+                    input(center_text("Press Enter to continue..."))
+            
+            else:
+                # Not enough points
+                print(center_text(f"{RED}Not enough points!{RESET} You need {item['cost']} but only have {current_score}."))
+                time.sleep(2)
+        else:
+            # Invalid choice
+            print(center_text(f"{RED}Invalid selection.{RESET} Please enter a number or 'Q'."))
+            time.sleep(1.5)
+
+    clear_screen()
+    print(center_text("Thanks for visiting the theater!"))
+# --- End of Storefront Function ---
+
 
 def run_level_progression(seed=None):
     if seed is not None:
@@ -109,12 +250,12 @@ def run_level_progression(seed=None):
     while True:  # Main game loop - user chooses when to quit
         # Show current stats and difficulty selection
         clear_screen()
-        print("=" * 50)
-        print("CRYPTOGRAPHY CHALLENGE")
-        print("=" * 50)
-        print(f"Current Score: {total_score}")
-        print(f"Rounds Played: {rounds_played}")
-        print("=" * 50)
+        print(center_text("=" * 50))
+        print(center_text("CRYPTOGRAPHY CHALLENGE"))
+        print(center_text("=" * 50))
+        print(center_text(f"Current Score: {total_score}"))
+        print(center_text(f"Rounds Played: {rounds_played}"))
+        print(center_text("=" * 50))
         print("\nChoose your difficulty:")
         print(f"[1] Easy   - 3 points")
         print(f"[2] Hard   - 5 points") 
@@ -141,32 +282,27 @@ def run_level_progression(seed=None):
                 continue
         
         if choice == "0":
-            # Game over - show final stats and prize
-            final_stars = calculate_stars(total_score)
+            # --- MODIFIED: Game Over Logic ---
             clear_screen()
-            print("=" * 60)
-            print("                    GAME COMPLETE")
-            print("=" * 60)
-            print(f"Final Score:      {total_score}")
-            print(f"Rounds Played:    {rounds_played}")
-            print("=" * 60)
+            # --- Corrected Centered Headers ---
+            print(center_text("=" * 60))
+            print(center_text("GAME COMPLETE"))
+            print(center_text("=" * 60))
+            print(center_text(f"Final Score:      {total_score}"))
+            print(center_text(f"Rounds Played:    {rounds_played}"))
+            print(center_text("=" * 60))
             
-            # Show badge display
-            if rounds_played > 0:
-                print()
-                print("BADGES:")
-                print(get_badge_display(final_stars))
-                print()
-                
-                # Offer prize animation
-                show_prize = input("Claim your prize animation? [Y/n]: ").strip().lower()
-                if show_prize != 'n':
-                    print("\n>> Preparing prize animation...")
-                    print("   Tip: Fullscreen your terminal for best experience!")
-                    award_prize_animation(total_score, final_stars)
+            # --- NEW: Call the Storefront ---
+            print("\n" + center_text("You can now spend your points at the Theater!"))
+            input(center_text("Press Enter to continue..."))
+            
+            # This function will now handle the entire post-game loop
+            run_storefront(total_score)
+            
+            # --- End of new logic ---
             
             print("\nThanks for playing!")
-            break
+            break # This exits the main game
             
         # Map choice to difficulty
         difficulty_map = {"1": "easy", "2": "hard"}
@@ -320,6 +456,7 @@ def run_cipher_tester():
     print("Plain :", plaintext)
     print("Params:", params)
     print("Cipher:", ciphertext)
+
 def run_demos():
     while True:
         print("\nAvailable Demos:")
@@ -357,193 +494,23 @@ def run_demo(file_name):
 def dev_test_prize_system():
     """Dev mode: Test the prize/star rating system"""
     clear_screen()
-    print("=" * 60)
-    print("               DEV MODE - PRIZE SYSTEM TEST")
-    print("=" * 60)
+    # --- Corrected Centered Headers ---
+    print(center_text("=" * 60))
+    print(center_text("DEV MODE - STOREFRONT TEST"))
+    print(center_text("=" * 60))
     print()
-    print("Test different score scenarios:\n")
-    print("[1] Test 1 star  (Score: 2)")
-    print("[2] Test 2 stars (Score: 7)")
-    print("[3] Test 3 stars (Score: 12)")
-    print("[4] Test 4 stars (Score: 17)")
-    print("[5] Test 5 stars (Score: 25)")
-    print("[6] Custom score")
-    print("[7] Test all badges in game context")
-    print("[8] Play all animations in folder")
-    print("[0] Back to main menu")
-    print()
+    print("Test the storefront with a custom point value.\n")
     
-    choice = input("Select test: ").strip()
-    
-    test_scenarios = {
-        "1": (2, 1),
-        "2": (7, 2),
-        "3": (12, 3),
-        "4": (17, 4),
-        "5": (25, 5),
-    }
-    
-    if choice in test_scenarios:
-        score, rounds = test_scenarios[choice]
-        stars = calculate_stars(score)
-        
-        clear_screen()
-        print("=" * 60)
-        print("                    TEST GAME COMPLETE")
-        print("=" * 60)
-        print(f"Final Score:      {score}")
-        print(f"Rounds Played:    {rounds}")
-        print("=" * 60)
-        print()
-        print("BADGES:")
-        print(get_badge_display(stars))
-        print()
-        
-        show_prize = input("See prize animation? [Y/n]: ").strip().lower()
-        if show_prize != 'n':
-            print("\n>> Preparing prize animation...")
-            print("   Tip: Fullscreen your terminal for best experience!")
-            award_prize_animation(score, stars)
-    
-    elif choice == "6":
-        try:
-            score = int(input("Enter score: "))
-            stars = calculate_stars(score)
-            print(f"\nResult: {stars} stars for {score} points")
-            print()
-            print("BADGES:")
-            print(get_badge_display(stars))
-            print()
-            show_prize = input("See prize animation? [Y/n]: ").strip().lower()
-            if show_prize != 'n':
-                award_prize_animation(score, stars)
-        except ValueError:
-            print("Invalid input")
-    
-    elif choice == "7":
-        # Test badges in game context
-        clear_screen()
-        print("=" * 60)
-        print("            TEST BADGES IN GAME CONTEXT")
-        print("=" * 60)
-        print()
-        
-        prize_map = {
-            1: ("prizes/peter.json", "1 Star - Peter", 2),
-            2: ("prizes/dance2.json", "2 Stars - Dance", 7),
-            3: ("prizes/linuxtype.json", "3 Stars - Linux Type", 12),
-            4: ("prizes/nerd.json", "4 Stars - Nerd", 17),
-            5: ("prizes/squid.json", "5 Stars - Squid", 25)
-        }
-        
-        for stars, (animation_file, description, score) in prize_map.items():
-            clear_screen()
-            print("=" * 60)
-            print("                    GAME COMPLETE")
-            print("=" * 60)
-            print(f"Final Score:      {score}")
-            print(f"Rounds Played:    {stars}")
-            print("=" * 60)
-            print()
-            print("BADGES:")
-            print(get_badge_display(stars))
-            print()
-            print(f"Prize: {description}")
-            
-            play = input("\nPlay this prize animation? [Y/n/q to quit]: ").strip().lower()
-            if play == 'q':
-                break
-            elif play != 'n':
-                if not os.path.exists(animation_file):
-                    print(f"[!] File not found: {animation_file}")
-                    input("Press Enter to continue...")
-                else:
-                    try:
-                        subprocess.run([sys.executable, "prize.py", animation_file])
-                    except Exception as e:
-                        print(f"[!] Error: {e}")
-                        input("Press Enter to continue...")
-        
-        input("\nAll badge tests complete. Press Enter to continue...")
-    
-    elif choice == "8":
-        # Play all animations in prizes folder
-        import glob
-        
-        while True:
-            clear_screen()
-            print("=" * 60)
-            print("         PLAY ALL ANIMATIONS IN FOLDER")
-            print("=" * 60)
-            print()
-            
-            # Get all .json files in prizes folder
-            animation_files = sorted(glob.glob("prizes/*.json"))
-            
-            if not animation_files:
-                print("[!] No animation files found in prizes/ folder")
-                input("Press Enter to continue...")
-                break
-            
-            print(f"Found {len(animation_files)} animation(s):\n")
-            for i, filepath in enumerate(animation_files, 1):
-                filename = os.path.basename(filepath)
-                print(f"  [{i}] {filename}")
-            print(f"  [A] Play all sequentially")
-            print(f"  [0] Back to dev menu")
-            print()
-            
-            selection = input("Select animation number (or A for all): ").strip().lower()
-            
-            if selection == '0':
-                break
-            elif selection == 'a':
-                # Play all animations sequentially
-                for filepath in animation_files:
-                    filename = os.path.basename(filepath)
-                    print(f"\n{'='*60}")
-                    print(f"  Animation: {filename}")
-                    print('='*60)
-                    
-                    play = input("Play this animation? [Y/n/q to quit]: ").strip().lower()
-                    if play == 'q':
-                        break
-                    elif play != 'n':
-                        try:
-                            subprocess.run([sys.executable, "prize.py", filepath])
-                        except Exception as e:
-                            print(f"[!] Error: {e}")
-                            input("Press Enter to continue...")
-                
-                input("\nAll animations complete. Press Enter to continue...")
-            else:
-                # Try to play selected animation by number
-                try:
-                    idx = int(selection) - 1
-                    if 0 <= idx < len(animation_files):
-                        filepath = animation_files[idx]
-                        filename = os.path.basename(filepath)
-                        print(f"\nPlaying: {filename}")
-                        try:
-                            subprocess.run([sys.executable, "prize.py", filepath])
-                        except Exception as e:
-                            print(f"[!] Error: {e}")
-                        input("\nPress Enter to continue...")
-                    else:
-                        print("[!] Invalid selection")
-                        input("Press Enter to continue...")
-                except ValueError:
-                    print("[!] Invalid input")
-                    input("Press Enter to continue...")
-    
-    elif choice == "0":
-        return
-    else:
-        print("Invalid choice")
+    try:
+        score = int(input("Enter points to test store with: ") or "10")
+        print(f"\nLoading storefront with {score} points...")
+        input("Press Enter to continue...")
+        run_storefront(score) # Call the storefront directly
+    except ValueError:
+        print("Invalid input")
     
     input("\nPress Enter to continue...")
-    dev_test_prize_system()
-
+    # The old star/badge test logic is no longer needed.
 
 try:
     menu_text = "Welcome to a Cryptography learning game. Enter [1] to test your decryption skills, [2] for demos, or [3] for cipher tester"
@@ -566,7 +533,7 @@ try:
             if back in ("n", "no"):
                 break
     elif userMode == 9 and DEV_MODE:
-        dev_test_prize_system()
+        dev_test_prize_system() # This now tests the storefront
     else:
         if userMode == 9 and not DEV_MODE:
             print("Dev mode is disabled. Set DEV_MODE = True in main.py to enable.")
