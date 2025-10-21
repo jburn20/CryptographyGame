@@ -1,4 +1,5 @@
 import os, sys, json, time, shutil
+from utils import clear_screen
 
 def ensure_terminal_size(min_cols=80, min_rows=20):
     """Check if terminal is large enough for animation"""
@@ -50,6 +51,7 @@ def scale_to_fit(frame_text):
 
 def animate(frames, delay=0.07, loop=1):
     """Play animation frames"""
+    clear_screen()
     sys.stdout.write("\033[H")
     
     for _ in range(loop):

@@ -34,8 +34,8 @@ def build_storefront_items():
         'prizes/round.json': 3,
         'prizes/dance2.json': 3,
         'prizes/juggler.json': 3,
-        'prizes/lookrighthere': 3,
-        'prizes/spinning': 3,
+        'prizes/lookrighthere.json': 3,
+        'prizes/spinning.json': 3,
         'prizes/exasperated.json': 3,
         'prizes/lockin.json': 3,
         'prizes/shymariachi.json': 5,
@@ -158,8 +158,9 @@ def run_storefront(total_score):
         return
 
     # Sort items by cost for display
-    sorted_items = sorted(STORE_ITEMS.items(), key=lambda item: item[1]['cost'])
-
+    sorted_items = sorted(STORE_ITEMS.items(), key=lambda item: int(item[0]))    
+    print(sorted_items)
+    watched = []
     while True:
         clear_screen()
         # --- Corrected Centered Headers ---
@@ -168,7 +169,6 @@ def run_storefront(total_score):
         print(center_text("=" * 60))
         print(center_text(f"Your Points: {YELLOW}{current_score}{RESET}"))
         print("\n")
-        
         # --- New Color Key ---
         print(center_text(f"Cost Key: {GREEN}1 Point{RESET} | {YELLOW}3 Points{RESET} | {RED}5 Points{RESET}"))
         print(center_text("-" * 45))
@@ -178,7 +178,7 @@ def run_storefront(total_score):
         for key, item in sorted_items:
             cost = item['cost']
             name = item['name']
-            
+            #print(name)
             # Determine color by cost
             if cost == 1:
                 color = GREEN
@@ -189,6 +189,8 @@ def run_storefront(total_score):
             
             # Override color if unaffordable
             if current_score < cost:
+                color = GREY
+            if name in watched: 
                 color = GREY
                 
             display_text = f"{color}[{key}] {name} ({cost} pt){RESET}"
@@ -211,6 +213,7 @@ def run_storefront(total_score):
         if choice in STORE_ITEMS:
             item = STORE_ITEMS[choice]
             if current_score >= item['cost']:
+                watched.append(item['name'])
                 # Purchase successful
                 current_score -= item['cost']
                 clear_screen()
