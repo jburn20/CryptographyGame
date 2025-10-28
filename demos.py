@@ -582,3 +582,10 @@ def playfair_interactive_demo(plaintext="HELLO"):
 
 # Run demo
 #playfair_interactive_demo("HELLO")
+
+# Import the symmetric cipher demo from hashdemo.py
+from hashdemo import mini_hash_demo
+
+@register_demo("Symmetric Cipher Demo")
+def symmetric_cipher_demo_wrapper():
+    mini_hash_demo()
