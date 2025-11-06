@@ -10,7 +10,7 @@ from utils import GREEN, YELLOW, RED, GREY, RESET, clear_screen, center_text, ge
 
 # --- Dev toggles ---
 DEV_SHOW_CIPHER = False  # Show cipher names during gameplay
-DEV_MODE = True  # Enable dev menu for testing features
+DEV_MODE = False  # Enable dev menu for testing features
 
 # --- DELETED the old hard-coded STORE_ITEMS dictionary ---
 

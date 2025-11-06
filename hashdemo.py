@@ -7,7 +7,7 @@ from utils import RED, GREEN, YELLOW, RESET, FAST_CLEAR, center_text, clear_scre
 
 
 # Bitwise XOR animation for a single byte
-def _animate_xor_byte(byte_a, byte_b, title, state, current_index, delay=0.16):
+def _animate_xor_byte(byte_a, byte_b, title, state, current_index, delay=0.15):
     """
     Performs a detailed, bit-by-bit animation of the
     XOR operation between two bytes. (Refactored for FAST_CLEAR)
@@ -125,7 +125,7 @@ def shuffle_state(state):
     random.shuffle(new_state)
     return new_state
 
-def rotate_animation(state, direction="left", n=1, delay=0.3):
+def rotate_animation(state, direction="left", n=1, delay=0.25):
     """
     Animate and perform rotation on the given state.
     direction: "left" or "right"

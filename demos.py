@@ -580,7 +580,7 @@ from collections import OrderedDict
 
 
 @register_demo("Playfair")
-def playfair_interactive_demo(plaintext="CYBERCHEF", keyword="MONARCHY"):
+def playfair_interactive_demo(plaintext="CYBERHAWKS", keyword="MONARCHY"):
     """
     Complete Playfair cipher demonstration combining grid creation and encryption.
     """
