@@ -1,13 +1,33 @@
 import os, time, shutil
-import re
+import re, sys
 import random
-from utils import RED, GREEN, YELLOW, RESET, center_text, clear_screen, ANSI_ESCAPE
+from utils import RED, GREEN, YELLOW, RESET, FAST_CLEAR, center_text, clear_screen, ANSI_ESCAPE
 
 # Bitwise XOR animation for a single byte
-def xor_byte_animation(byte_val, xor_val, delay=0.22):
-    bin_a = f"{byte_val:08b}"
-    bin_b = f"{xor_val:08b}"
+
+
+# Bitwise XOR animation for a single byte
+def _animate_xor_byte(byte_a, byte_b, title, state, current_index, delay=0.16):
+    """
+    Performs a detailed, bit-by-bit animation of the
+    XOR operation between two bytes. (Refactored for FAST_CLEAR)
+    """
+    bin_a = f"{byte_a:08b}"
+    bin_b = f"{byte_b:08b}"
     result = ""
+
+    # --- Build the new Context Line ---
+    context_line = "State:  "
+    for i, char_code in enumerate(state):
+        char = chr(char_code) if 32 <= char_code < 127 else "?"
+        if i == current_index:
+            # Highlight the current character being processed
+            context_line += f" {GREEN}[{char}]{RESET}"
+        else:
+            context_line += f" {char}"
+    
+    # --- Build the new XOR Explanation Line ---
+    xor_explanation = "XOR stands for Exclusive OR. It returns True (1) if bits are different."
 
     for i in range(8):
         bit_a = int(bin_a[i])
@@ -17,9 +37,9 @@ def xor_byte_animation(byte_val, xor_val, delay=0.22):
 
         # Determine color for current bits
         if bit_a == bit_b:
-            color_a = color_b = RED  # same bits → false → red
+            color_a = color_b = RED  # same bits → 0
         else:
-            color_a = color_b = GREEN  # different bits → true → green
+            color_a = color_b = GREEN  # different bits → 1
 
         # Build highlighted input bytes
         highlighted_a = ""
@@ -30,7 +50,7 @@ def xor_byte_animation(byte_val, xor_val, delay=0.22):
                 highlighted_b += f"{color_b}{bin_b[j]}{RESET}"
             else:
                 highlighted_a += bin_a[j]
-                highlighted_b += bin_b[j]
+                highlighted_b += bin_b[j] # <-- THIS WAS THE BUG. Was bin_a[j]
 
         # Build highlighted result so far
         highlighted_result = ""
@@ -39,28 +59,56 @@ def xor_byte_animation(byte_val, xor_val, delay=0.22):
             highlighted_result += f"{color}{bit}{RESET}"
         highlighted_result += "_" * (8 - len(result))
 
-        clear_screen()
-        print(center_text("XOR Round Animation\n"))
-        print(center_text(f"Original byte: {highlighted_a}"))
-        print(center_text(f"XOR value    : {highlighted_b}\n"))
-        print(center_text(f"Result so far: {highlighted_result}"))
+        # --- Refactored Output (Single Frame) ---
+        output = FAST_CLEAR
+        output += center_text(f"{title}") + "\n\n"
+        output += center_text(context_line) + "\n\n"
+        output += center_text(f"Byte A (Data): {highlighted_a}") + "\n"
+        output += center_text(f"Byte B (Key) : {highlighted_b}") + "\n\n" # Added labels
+        output += center_text(f"Result : {highlighted_result}") + "\n\n" # Added labels
+        output += center_text(f"{YELLOW}{xor_explanation}{RESET}") + "\n"
+        output += center_text("(Green=1, Red=0)") + "\n"
+
+        sys.stdout.write(output)
+        sys.stdout.flush()
+        # --- End Refactor ---
+
         time.sleep(delay)
 
-    final_val = byte_val ^ xor_val
-    clear_screen()
-    print(center_text("XOR Round Animation - Byte Result\n"))
-    print(center_text(f"{GREEN if final_val else RED}{final_val:08b}{RESET} (decimal {final_val})"))
-    time.sleep(0.5)
+    final_val = byte_a ^ byte_b
+    final_bin_result = f"{final_val:08b}"
+
+    # --- Build Final Result Frame (Replaces old 'intermediary' screen) ---
+    # Build the final color-coded result string
+    color_final_result = ""
+    for bit in final_bin_result:
+        color = GREEN if bit == "1" else RED
+        color_final_result += f"{color}{bit}{RESET}"
+
+    output = FAST_CLEAR
+    output += center_text(f"{title} - Byte Result") + "\n\n"
+    output += center_text(context_line) + "\n\n"
+    output += center_text(f"Byte A (Data): {bin_a}") + "\n"
+    output += center_text(f"Byte B (Key) : {bin_b}") + "\n\n" # Added labels
+    output += center_text(f"Result : {color_final_result} (Decimal: {final_val})") + "\n\n" # Added labels
+    output += center_text(f"{YELLOW}{xor_explanation}{RESET}") + "\n"
+    output += center_text("(Green=1, Red=0)") + "\n"
+
+    sys.stdout.write(output)
+    sys.stdout.flush()
+    # --- End Final Frame ---
+
+    time.sleep(0.5) # Hold on the final result
     return final_val
 
 
-# Apply XOR round animation to full state
 def xor_round_animated(state, round_val=0x1F):
+    """Apply XOR round animation to full state."""
     new_state = []
     for idx, byte in enumerate(state):
-        print(center_text(f"Processing byte {idx+1}/{len(state)}"))
-        time.sleep(0.5)
-        new_state.append(xor_byte_animation(byte, round_val))
+        title = f"XOR Round - Byte {idx+1}/{len(state)}"
+        # Pass the original state and current index for context
+        new_state.append(_animate_xor_byte(byte, round_val, title=title, state=state, current_index=idx))
     return new_state
 
 # Other transformation functions
@@ -167,25 +215,20 @@ def animate_step(state, transform_name, new_state):
     time.sleep(1)
     return new_state
 
-def reverse_xor_animation(state, xor_val, delay=0.45):
-    """Reverse XOR animation - same as forward since XOR is self-inverse"""
+def reverse_xor_animation(state, xor_val, delay=0.16):
+    """
+    Reverse XOR animation - uses the *same* helper since
+    XOR is self-inverse.
+    """
+    # Create a snapshot of the state *before* modification
+    # so the context line is accurate for each byte
+    original_state_snapshot = state[:]
+    
     for idx, byte in enumerate(state):
-        bin_a = f"{byte:08b}"
-        bin_b = f"{xor_val:08b}"
-        
-        clear_screen()
-        print(center_text(f"REVERSING XOR - Byte {idx+1}/{len(state)}\n"))
-        print(center_text(f"Hash byte: {bin_a}"))
-        print(center_text(f"XOR(1F)  : {bin_b}"))
-        
-        reversed_byte = byte ^ xor_val
-        result = f"{reversed_byte:08b}"
-        
-        print(center_text(f"Result   : {GREEN}{result}{RESET}"))
-        time.sleep(delay)
-        state[idx] = reversed_byte
+        title = f"REVERSING XOR - Byte {idx+1}/{len(state)}"
+        # The math is the same! byte ^ xor_val
+        state[idx] = _animate_xor_byte(byte, xor_val, title=title, state=original_state_snapshot, current_index=idx, delay=delay)
     return state
-
 def reverse_rotate_animation(state, direction, n, delay=0.3):
     """Reverse rotate animation - rotate in opposite direction"""
     reverse_direction = "right" if direction == "left" else "left"

@@ -1,5 +1,5 @@
 import time, string, shutil, re, os, sys, random
-from utils import UP, RED, RESET, GREEN, YELLOW, get_terminal_width, center_text, clear_screen, ANSI_ESCAPE
+from utils import UP, RED, RESET, GREEN, YELLOW, GREY, FAST_CLEAR, FAST, get_terminal_width, center_text, clear_screen, ANSI_ESCAPE
 
 demo_registry = {}
 def register_demo(name):
@@ -11,6 +11,7 @@ def register_demo(name):
 @register_demo("Caesar")
 
 def caesar_demo(word="hello", shift=3, delay=0.21):
+    clear_screen()
     if shift is None:
         shift = random.randint(1, 25)
 
@@ -18,30 +19,30 @@ def caesar_demo(word="hello", shift=3, delay=0.21):
 
     FRAME_LINES = 5
 
-    # --- Initial Setup ---
-    # Print the initial, static frame just once.
+    # *--- Initial Setup ---
+    # *Print the initial, static frame just once.
     print(center_text(f"Original word: {word}"))
     print(center_text(f"Shift amount: {shift}"))
-    print() # Blank line
+    print() # *Blank line
     print(center_text(" ".join(list(word))))
     print(center_text(" ".join(bottom_row)))
     
-    time.sleep(1) # Pause before starting the animation
+    time.sleep(1) # *Pause before starting the animation
     
     for index, ch in enumerate(word):
         if not ch.isalpha():
             bottom_row[index] = ch
-            continue # Skip animation for non-letters
+            continue # *Skip animation for non-letters
 
         start = ord('a') if ch.islower() else ord('A')
         original_ord = ord(ch) - start
 
-        # Animate the shift for the current letter
+        # *Animate the shift for the current letter
         for step in range(shift + 1):
             demo_ch = chr(start + ((original_ord + step) % 26))
             bottom_row[index] = demo_ch
 
-            # --- Prepare the text for the two lines that change ---
+            # *--- Prepare the text for the two lines that change ---
             top_row_display = " ".join(
                 f"{RED}{c}{RESET}" if j == index else c
                 for j, c in enumerate(word)
@@ -51,18 +52,18 @@ def caesar_demo(word="hello", shift=3, delay=0.21):
                 for j, c in enumerate(bottom_row)
             )
 
-            # --- Redraw only the changing lines ---
-            sys.stdout.write(UP * 2) # Move cursor up 2 lines (to the top row)
+            # !--- Redraw only the changing lines ---
+            sys.stdout.write(UP * 2) # *Move cursor up 2 lines (to the top row)
             terminal_width = get_terminal_width()
 
-            # Overwrite the old top and bottom rows
+            # *Overwrite the old top and bottom rows
             sys.stdout.write(center_text(top_row_display).ljust(terminal_width) + "\n")
             sys.stdout.write(center_text(bottom_row_display).ljust(terminal_width) + "\n")
             
-            sys.stdout.flush() # Force the update
+            sys.stdout.flush() # *Force the update
             time.sleep(delay)
 
-    # Move cursor to a new line after the animation is complete
+    # *Move cursor to a new line after the animation is complete
     print("\n")
     print(center_text("Final Ciphertext: " + "".join(bottom_row)))
 
@@ -74,12 +75,12 @@ def caesar_demo(word="hello", shift=3, delay=0.21):
 @register_demo("Rot13")
 
 def rot13_word_animation(word="helloworld"):
-
+    clear_screen()
     shift = 13
     alphabet = list(string.ascii_lowercase)
     ciphered_display = [" " if c != " " else " " for c in word]
 
-    last_frame_height = 0  # dynamically tracked
+    last_frame_height = 0  # !dynamically tracked - used for cursor positioning
 
     def draw_frame(display_phrase, display_alphabet, display_cipher):
         nonlocal last_frame_height
@@ -92,13 +93,13 @@ def rot13_word_animation(word="helloworld"):
         if last_frame_height:
             sys.stdout.write("\033[F" * last_frame_height)
         for line in frame_lines:
-            sys.stdout.write("\033[2K")  # clear whole line regardless of width
+            sys.stdout.write("\033[2K")  # *clear whole line regardless of width
             print(line)
         sys.stdout.flush()
         last_frame_height = len(frame_lines)
 
 
-    # Print initial frame
+    # *Print initial frame
     draw_frame(word, alphabet, ciphered_display)
 
     for idx, letter in enumerate(word):
@@ -142,17 +143,16 @@ def rot13_word_animation(word="helloworld"):
 @register_demo("Railfence")
 
 def rail_fence_demo(word="HELLOWORLD", rails=3, delay=0.4):
-
-
+    clear_screen()
     print(center_text("The rail fence cipher is a transposition cipher that writes characters in a zigzag pattern across a given number of rows(rails)."))
 
     header = f"Word: {word} | Rails: {rails}"
     print(center_text(header) + "\n")
 
-    # Initialize rail structure
+    # *Initialize rail structure
     fence = [["-" for _ in range(len(word))] for _ in range(rails)]
 
-    # Print initial rails
+    # *Print initial rails
     for row in fence:
         print(center_text(" ".join(row)))
 
@@ -160,23 +160,23 @@ def rail_fence_demo(word="HELLOWORLD", rails=3, delay=0.4):
     direction = 1
 
     for col, ch in enumerate(word):
-        # Place the letter in the correct rail
+        # *Place the letter in the correct rail
         fence[rail][col] = ch
 
-        # Move cursor up to the start of rail lines
-        sys.stdout.write(f"\033[{rails}F")  # move cursor up N lines
-        # Print each rail line centered
+        # !Move cursor up to the start of rail lines
+        sys.stdout.write(f"\033[{rails}F")  # *move cursor up N lines
+        # *Print each rail line centered
         for row in fence:
             print(center_text(" ".join(row)))
         sys.stdout.flush()
         time.sleep(delay)
 
-        # Move to next rail
+        # !Move to next rail
         rail += direction
         if rail == 0 or rail == rails - 1:
             direction *= -1
 
-    # Build final ciphertext
+    # *Build final ciphertext
     cipher = "".join(ch for row in fence for ch in row if ch != "-")
     print("\n" + center_text("Final Ciphertext: " + cipher))
 
@@ -192,7 +192,7 @@ def vigenere_number_animation(plaintext="HELLO WORLD", key="KEY", delay=0.8):
     """
     Animates Vigenère cipher with numeric values without clearing entire terminal.
     """
-
+    clear_screen()
     def center_text(text):
         width = shutil.get_terminal_size().columns
         return text.center(width)
@@ -202,7 +202,7 @@ def vigenere_number_animation(plaintext="HELLO WORLD", key="KEY", delay=0.8):
     key_len = len(key)
     ciphertext = ""
 
-    # Initial display of plaintext and aligned key
+    # *Initial display of plaintext and aligned key
     aligned_key = [key[i % key_len] for i in range(len(plaintext))]
     print(center_text("Phrase:     " + " ".join(plaintext)))
     print(center_text("Key:        " + " ".join(aligned_key)))
@@ -216,14 +216,14 @@ def vigenere_number_animation(plaintext="HELLO WORLD", key="KEY", delay=0.8):
 
         k_char = key[i % key_len]
 
-        # Numeric values
+        # *Numeric values
         p_num = ord(p_char) - ord('A')
         k_num = ord(k_char) - ord('A')
         c_num = (p_num + k_num) % 26
         c_char = chr(c_num + ord('A'))
         ciphertext += c_char
 
-        # Build highlighted plaintext and key
+        # *Build highlighted plaintext and key
         plaintext_display = " ".join(
             f"{RED}{c}{RESET}" if j == i else c
             for j, c in enumerate(plaintext)
@@ -233,7 +233,7 @@ def vigenere_number_animation(plaintext="HELLO WORLD", key="KEY", delay=0.8):
             for j in range(len(plaintext))
         )
 
-        # Move cursor up 4 lines to overwrite previous output
+        # !Move cursor up 4 lines to overwrite previous output
         sys.stdout.write(UP*4)
 
         print(center_text("Phrase:     " + plaintext_display))
@@ -262,34 +262,34 @@ def circular_bit_shift_animation(value=178, shift=5, direction='left', delay=0.5
     if not 0 <= value <= 255:
         raise ValueError("Value must be 0-255 (8-bit).")
 
-    bits = list(f"{value:08b}")  # 8-bit binary
-    #clear_screen()
+    bits = list(f"{value:08b}")  # *8-bit binary
+    clear_screen()
 
     print(center_text(f"Initial value: {value} -> {''.join(bits)}"))
     time.sleep(1.5)
 
-    # Track the index of the bit we want to follow
+    # !Track the index of the bit we want to follow
     tracked_index = 0 if direction == 'left' else len(bits) - 1
     tracked_bit = bits[tracked_index]
     FRAME_LINES = 1
     for s in range(shift):
         sys.stdout.write(UP * FRAME_LINES)
 
-        # Circular shift
+        # *Circular shift
         if direction == 'left':
             bit = bits.pop(0)
             bits.append(bit)
-        else:  # right
+        else:  # *right
             bit = bits.pop()
             bits.insert(0, bit)
 
-        # Update tracked_index after shift
+        # !Update tracked_index after shift
         if direction == 'left':
             tracked_index = (tracked_index - 1) % 8
         else:
             tracked_index = (tracked_index + 1) % 8
 
-        # Build display with highlighted tracked bit
+        # *Build display with highlighted tracked bit
         bit_display = ""
         for i, b in enumerate(bits):
             if i == tracked_index:
@@ -309,15 +309,14 @@ def circular_bit_shift_animation(value=178, shift=5, direction='left', delay=0.5
 @register_demo("Columnar")
 
 def columnar_demo():
-
-
+    clear_screen()
     key = "KEY"
-    plaintext = "HELLO_WORLD_"   # padded with underscores
+    plaintext = "HELLO_WORLD_"   # *padded with underscores
     cols = len(key)
-    rows = (len(plaintext) + cols - 1) // cols  # ceiling division
+    rows = (len(plaintext) + cols - 1) // cols  # *ceiling division
     grid = [[" " for _ in range(cols)] for _ in range(rows)]
 
-    # Column order: 2 above col 0, 1 above col 1, 3 above col 2
+    # *Column order: 2 above col 0, 1 above col 1, 3 above col 2
     order = [2, 1, 3]
 
     def display(ciphertext="", highlight=None):
@@ -332,13 +331,13 @@ def columnar_demo():
             line = []
             for c, x in enumerate(row):
                 if highlight == (r, c):
-                    line.append(f"[{RED}{x}{RESET}]")   # highlight in red
+                    line.append(f"[{RED}{x}{RESET}]")   # *highlight in red
                 else:
                     line.append(f"[{x}]")
             print(" ".join(line))
         print("\nCiphertext:", ciphertext)
 
-    # Step 1: fill plaintext row by row
+    # *Step 1: fill plaintext row by row
     for i, ch in enumerate(plaintext):
         r, c = divmod(i, cols)
         grid[r][c] = ch
@@ -347,7 +346,7 @@ def columnar_demo():
 
     time.sleep(1)
 
-    # Step 2: read ciphertext column by column in given order
+    # !Step 2: read ciphertext column by column in given order
     ciphertext = ""
     for col in sorted(range(cols), key=lambda x: order[x]):
         for row in range(rows):
@@ -357,123 +356,340 @@ def columnar_demo():
 
     print("\nFinal Ciphertext:", ciphertext)
 
-@register_demo("Vertical Spinner")
 
-def vertical_spinner_alternating_demo(input_phrase="HELLO"):
 
+
+
+
+@register_demo("Jefferson Discs")
+def jefferson_cipher_demo(plaintext="DECRYPTME", key_offset=6):
+    """
+    Part 1: Assembles the 'locked' cipher disks.
+    Part 2: Animates the decryption by aligning the ciphertext.
+    """
+    clear_screen()
+    # *--- 1. This part does work behind scenes (Initialization) ---
     alphabet = string.ascii_uppercase
-    input_phrase = input_phrase.upper()
+    plaintext = plaintext.upper()
+    ciphertext = ""
 
-    # Initialize columns with random shifts
+    
+    # *Every column will travel this many steps.
+    # *We'll set this to 6 to give it one more step, as requested.
+    TRAVEL_DISTANCE = 6 
+    # *The total width to draw is the last letter's start position.
+    max_draw_width = (len(plaintext) - 1) + TRAVEL_DISTANCE
+    
+
+    # *Initialize columns
     columns = []
-    for ch in input_phrase:
-        if ch not in alphabet:
-            ch = "_"
-            idx = 0
+    for col_num, p_char in enumerate(plaintext):
+        if p_char not in alphabet:
+            p_char = " "
+            p_idx = 0
         else:
-            idx = alphabet.index(ch)
-        spins = random.randint(3, 10)  # random spin count per column
-        top = alphabet[(idx - 1) % 26]
-        middle = alphabet[idx]
-        bottom = alphabet[(idx + 1) % 26]
+            p_idx = alphabet.index(p_char)
+            
+        # !--- Jefferson Cipher Logic ---
+        # *1. Calculate the ciphertext character based on the offset
+        c_idx = (p_idx + key_offset) % 26
+        c_char = alphabet[c_idx]
+        ciphertext += c_char
+        
+        # *2. Give the column a random starting spin
+        random_start_idx = random.randint(0, 25)
+        
         columns.append({
-            "top": top,
-            "middle": middle,
-            "bottom": bottom,
-            "idx": idx,
-            "counter": spins
+            "plaintext_char": p_char,
+            "ciphertext_char": c_char,
+            "target_idx": c_idx,            # The index of the ciphertext char
+            "current_idx": random_start_idx,# The current "spun" index
+            "target_pos": col_num,          # *For horizontal slot-in
+            "current_pos": col_num + TRAVEL_DISTANCE # !<-- NEW: Start relative to target
         })
 
-    ciphertext = ""  # assembled ciphertext
-    FRAME_LINES = 10
-    print("\n" * FRAME_LINES)
-    # Animate columns one at a time
-    for col_num, col in enumerate(columns):
-        shift_up = (col_num % 2 == 0)  # even columns up, odd columns down
+    # !This variable tracks the height of the *previous* frame
+    prev_frame_lines = 8 # *Part 1's frame is 8 lines
+    print("\n" * prev_frame_lines)
 
-        while col['counter'] > 0:
-            sys.stdout.write(UP * FRAME_LINES)
+    # !--- PART 1: HORIZONTAL SLOT-IN (Assemble Disks) ---
+    
+    for col_num, col_to_animate in enumerate(columns):
+        while col_to_animate['current_pos'] >= col_to_animate['target_pos']:
+            sys.stdout.write(UP * prev_frame_lines) 
+            
             frame_buffer = []
-            frame_buffer.append(center_text("Vertical Spinner Cipher Demo"))
-            frame_buffer.append("") # For the newline
+            frame_buffer.append(center_text("Discs with letters are stuck together according to a given key."))
+            frame_buffer.append("") 
 
-            counter_line = "Counter: "
-            for c_num, c in enumerate(columns):
-                counter_line += f"{c['counter']:2} " if c_num == col_num else " - "
-            frame_buffer.append(center_text(counter_line))
-            frame_buffer.append("") # For the newline
+            pos_map = {}
+            for i in range(col_num):
+                slotted_col = columns[i]
+                pos_map[slotted_col['target_pos']] = slotted_col
+            pos_map[col_to_animate['current_pos']] = col_to_animate
 
+            # *Draw the disks in their *current* (randomly spun) state
             for row_name in ["top", "middle", "bottom"]:
                 row_text = f"{row_name.capitalize():<8}"
-                for c_num, c in enumerate(columns):
-                    row_text += f"{RED}{c[row_name]}{RESET} " if c_num == col_num else f"{c[row_name]} "
+                # !--- NEW: Use max_draw_width for the loop ---
+                for i in range(max_draw_width + 1):
+                    if i in pos_map:
+                        col_data = pos_map[i]
+                        idx = col_data['current_idx'] # *Use current spun index
+                        
+                        # !--- This is the cipher logic ---
+                        if row_name == "top":
+                            letter = alphabet[(idx - key_offset + 26) % 26] # *Plaintext reveal
+                        elif row_name == "middle":
+                            letter = alphabet[idx] # *Ciphertext align
+                        else:
+                            letter = alphabet[(idx + 1) % 26] # *Filler
+                        # !---
+                        
+                        is_active = (col_data == col_to_animate)
+                        if is_active:
+                            row_text += f"{RED}{letter}{RESET} "
+                        else:
+                            row_text += f"{letter} "
+                    else:
+                        row_text += "  "
+                        
                 frame_buffer.append(center_text(row_text))
             
-            frame_buffer.append("") # Blank separator line
-            frame_buffer.append(center_text(f"Ciphertext: {ciphertext}"))
-            frame_buffer.append("") # For the final newline
+            frame_buffer.append("")
+            frame_buffer.append(center_text(f"Slotting disk {col_num+1}..."))
+            frame_buffer.append("") 
 
-            # --- Print the entire frame at once ---
-            # We use .ljust() to ensure any previous text on a line is fully overwritten
             terminal_width = get_terminal_width()
             for line in frame_buffer:
                 sys.stdout.write(line.ljust(terminal_width) + "\n")
             
-            sys.stdout.flush() # Force the terminal to draw the update
-            time.sleep(0.3)
+            sys.stdout.flush() 
+            time.sleep(0.08)
 
-            # --- (Shift column logic remains the same) ---
-            if shift_up:
-                col['top'], col['middle'] = col['middle'], col['bottom']
-                col['idx'] = (col['idx'] + 1) % 26
-                col['bottom'] = alphabet[(col['idx'] + 1) % 26]
-            else:
-                col['bottom'], col['middle'] = col['middle'], col['top']
-                col['idx'] = (col['idx'] - 1) % 26
-                col['top'] = alphabet[(col['idx'] - 1) % 26]
+            col_to_animate['current_pos'] -= 1
+    # ?========================================================================= 
+    # !--- END OF PART 1 ---
+    # ?=========================================================================
+    # !--- START OF PART 2: DECRYPTION (Aligning Ciphertext) ---
+    # ?=========================================================================
+    time.sleep(1.5) 
+    
+    # *Animate columns one at a time
+    for col_num, col in enumerate(columns):
+        
+        # !Spin until the 'middle' (current_idx) matches the 'target' (ciphertext_idx)
+        while col['current_idx'] != col['target_idx']:
+            current_frame_lines = 10 
+            sys.stdout.write(UP * prev_frame_lines) 
             
-            col['counter'] -= 1
+            frame_buffer = []
+            frame_buffer.append(center_text("Spin discs until ciphertext is found. The plaintext will align aswell."))
+            frame_buffer.append("")
 
-        ciphertext += col['middle']
-    # Final display
-    # Final display: middle letters (ciphertext) in red, others normal
+            for row_name in ["top", "middle", "bottom"]:
+                row_text = f"{row_name.capitalize():<8}"
+                for c_num, c in enumerate(columns):
+                    idx = c['current_idx']
+                    
+                    # !--- The Cipher Drawing Logic ---
+                    if row_name == "top":
+                        letter = alphabet[(idx - key_offset + 26) % 26] # *Plaintext
+                    elif row_name == "middle":
+                        letter = alphabet[idx] # *Ciphertext
+                    else:
+                        letter = alphabet[(idx + 1) % 26] # *Filler
+                    # !---
+                        
+                    if c_num == col_num:
+                        row_text += f"{RED}{letter}{RESET} " # *Active spinning column
+                    elif c['current_idx'] == c['target_idx']:
+                        # !--- MODIFICATION ---
+                        # *This column is already aligned. Color-code its rows.
+                        if row_name == "top":
+                            row_text += f"{GREEN}{letter}{RESET} " # *Show aligned plaintext as green
+                        elif row_name == "middle":
+                            row_text += f"{RED}{letter}{RESET} " # *Show aligned ciphertext as red
+                        else:
+                            row_text += f"{letter} " # *Bottom row default
+                        # !--- END MODIFICATION ---
+                    else:
+                        row_text += f"{letter} " # *Unaligned column
+                frame_buffer.append(center_text(row_text))
+            
+            frame_buffer.append("")
+            # *Show the target ciphertext we are spinning for
+            frame_buffer.append(center_text(f"Plaintext: {GREEN}{''.join([c['plaintext_char'] for c in columns])}{RESET}"))
+            frame_buffer.append(center_text(f"Ciphertext: {RED}{ciphertext}{RESET}"))
+            frame_buffer.append("") 
 
-    # Helper to compute visible length ignoring ANSI codes
-    def visible_len(text):
-        return len(re.sub(r'\033\[[0-9;]*m', '', text))
+            terminal_width = get_terminal_width()
+            for line in frame_buffer:
+                sys.stdout.write(line.ljust(terminal_width) + "\n")
+            
+            sys.stdout.flush() 
+            time.sleep(0.05) # *Faster spin
+            
+            prev_frame_lines = current_frame_lines
 
-    # Center text while ignoring ANSI codes
-
-    # Final display: middle letters in red, others normal
-    print(center_text("Vertical Spinner Cipher Demo\n"))
+            # !--- Shift column logic ---
+            col['current_idx'] = (col['current_idx'] + 1) % 26
+    # ?=========================================================================
+    # !--- END OF PART 2 ---
+    # ?=========================================================================
+    # *Final display
+    sys.stdout.write(UP * prev_frame_lines)
+    frame_buffer = []
+    frame_buffer.append(center_text("Decryption Complete!"))
+    frame_buffer.append("")
 
     for row_name in ["top", "middle", "bottom"]:
         row_text = f"{row_name.capitalize():<8}"
         for c in columns:
-            if row_name == "middle":
-                row_text += f"{RED}{c[row_name]}{RESET} "
+            idx = c['target_idx'] # !All are at target index now
+            
+            if row_name == "top":
+                letter = alphabet[(idx - key_offset + 26) % 26]
+                row_text += f"{GREEN}{letter}{RESET} " # *Highlight plaintext
+            elif row_name == "middle":
+                letter = alphabet[idx]
+                row_text += f"{RED}{letter}{RESET} " # *Highlight ciphertext
             else:
-                row_text += f"{c[row_name]} "
-        print(center_text(row_text))
+                letter = alphabet[(idx + 1) % 26]
+                row_text += f"{letter} "
+        frame_buffer.append(center_text(row_text))
+    
+    frame_buffer.append("")
+    frame_buffer.append(center_text(f"Plaintext:  {GREEN}{plaintext}{RESET}"))
+    frame_buffer.append(center_text(f"Ciphertext: {RED}{ciphertext}{RESET}"))
+    frame_buffer.append("") 
+    
+    terminal_width = get_terminal_width()
+    for line in frame_buffer:
+        sys.stdout.write(line.ljust(terminal_width) + "\n")
+    
+    sys.stdout.flush()
 
-    print()
-    print(center_text(f"Ciphertext: {RED}{ciphertext}{RESET}"))
-    time.sleep(3.5)
+
+
+
+import sys
+import os
+import time
+from collections import OrderedDict
+
 
 @register_demo("Playfair")
+def playfair_interactive_demo(plaintext="CYBERCHEF", keyword="MONARCHY"):
+    """
+    Complete Playfair cipher demonstration combining grid creation and encryption.
+    """
+    clear_screen()
+    
+    # ?=========================================================================
+    # !--- PART 1: Grid Creation Animation ---
+    # ?=========================================================================
+    
+    # *--- Step 1: Get and Process Keyword ---
+    sys.stdout.write(center_text("The Playfair Cipher: Part 1 - Grid Creation") + "\n\n")
+    sys.stdout.write(center_text(f"To use the playfair cipher, we must first build a 5x5 grid.") + "\n")
+    sys.stdout.write(center_text(f"The grid is built using a keyword with these rules:") + "\n\n")
+    sys.stdout.write(center_text(f"  1. The letter {RED}J{RESET} is treated as {GREEN}I{RESET} (to fit 26 letters in 25 squares).") + "\n")
+    sys.stdout.write(center_text(f"  2. {RED}Duplicate{RESET} letters in the keyword are removed.") + "\n")
+    sys.stdout.write(center_text(f"  3. The grid is filled in with keyword letters first. Then, the rest of the alphabet is filled in.") + "\n" +"\n")
+    
+    
+    sys.stdout.write(center_text(f"The default keyword is {GREEN}{keyword}{RESET}.") + "\n" + "\n")
+    sys.stdout.flush()
+    
+    user_keyword = input("Enter a keyword or press Enter to use default: ").strip().upper()
+    if not user_keyword:
+        user_keyword = keyword
+        
+    # *Prepare key: uppercase, no spaces, unique letters, J -> I
+    processed_key = "".join(OrderedDict.fromkeys(user_keyword.replace(" ", "").replace("J", "I")))
+    
+    # *Prepare alphabet
+    alphabet = "ABCDEFGHIKLMNOPQRSTUVWXYZ" # *No J
+    remaining_chars = "".join([c for c in alphabet if c not in processed_key])
+    
+    full_sequence = processed_key + remaining_chars
 
-#!PLAYFAIR
-def playfair_interactive_demo(plaintext="HELLO"):
+    # *--- Step 2: Animate the Grid Filling ---
+    grid = [['' for _ in range(5)] for _ in range(5)]
+    
+    for i, char_to_add in enumerate(full_sequence):
+        sys.stdout.write(FAST)
+        sys.stdout.write(center_text("The Playfair Cipher: Part 1 - Grid Creation") + "\n\n")
+        
+        # *Display the processed key and remaining alphabet
+        # *Highlight the character currently being added
+        seq_display = ""
+        for char in full_sequence:
+            if char == char_to_add:
+                seq_display += f"{RED}{char}{RESET}"
+            elif char in processed_key:
+                seq_display += f"{GREEN}{char}{RESET}"
+            else:
+                seq_display += f"{GREY}{char}{RESET}"
 
-    # 5x5 Playfair key grid (drop J)
-    grid = [
-        ['P','L','A','Y','F'],
-        ['I','B','C','D','E'],
-        ['G','H','K','M','N'],
-        ['O','Q','R','S','T'],
-        ['U','V','W','X','Z']
-    ]
+        sys.stdout.write(center_text(f"{GREEN}Keyword Chars{RESET} | {GREY}Remaining Alphabet{RESET}") + "\n")
+        sys.stdout.write(center_text(seq_display) + "\n\n")
 
+        # *Place the new character in the grid
+        r, c = divmod(i, 5)
+        grid[r][c] = char_to_add
+        
+        # *Display the grid as it's being built
+        lines = []
+        lines.append("┌───┬───┬───┬───┬───┐")
+        for row_idx, row in enumerate(grid):
+            line = "│"
+            for col_idx, val in enumerate(row):
+                char = val if val else ' '
+                color = GREEN if val in processed_key else RESET
+                if row_idx == r and col_idx == c:
+                    color = RED # *Highlight the newly added char
+                line += f" {color}{char}{RESET} │"
+            lines.append(line)
+            if row_idx < 4:
+                lines.append("├───┼───┼───┼───┼───┤")
+        lines.append("└───┴───┴───┴───┴───┘")
+
+        for line in lines:
+            sys.stdout.write(center_text(line) + "\n")
+            
+        sys.stdout.write(FAST)
+        time.sleep(0.08) # *Animation delay
+
+    # *--- Final Display ---
+    clear_screen()
+    sys.stdout.write(center_text("Part 1 - Grid Creation") + "\n\n")
+    sys.stdout.write(center_text("Grid construction complete!") + "\n\n")
+    
+    lines = []
+    lines.append("┌───┬───┬───┬───┬───┐")
+    for row in grid:
+        line = "│"
+        for val in row:
+            color = GREEN if val in processed_key else RESET
+            line += f" {color}{val}{RESET} │"
+        lines.append(line)
+        if row != grid[-1]:
+            lines.append("├───┼───┼───┼───┼───┤")
+    lines.append("└───┴───┴───┴───┴───┘")
+
+    for line in lines:
+        sys.stdout.write(center_text(line) + "\n")
+    
+    sys.stdout.write("\n\n")
+    sys.stdout.flush()
+    input(center_text("Press Enter to continue to Part 2 (Encryption)..."))
+    
+    # ?=========================================================================
+    # !--- PART 2: Encryption Animation ---
+    # ?=========================================================================
+    
     def find_pos(ch):
         for r, row in enumerate(grid):
             for c, val in enumerate(row):
@@ -483,38 +699,75 @@ def playfair_interactive_demo(plaintext="HELLO"):
 
     def display_grid(highlight=None):
         lines = []
+        lines.append("┌───┬───┬───┬───┬───┐")
         for r, row in enumerate(grid):
-            line = ""
+            line = "│"
             for c, val in enumerate(row):
                 if highlight and (r, c) in highlight:
-                    line += f"{RED}{val}!{RESET}  "  # red highlight
+                    line += f" {RED}{val}{RESET} │"
                 else:
-                    line += f"{val}  "
+                    line += f" {val} │"
             lines.append(line)
-        return "\n".join(lines)
+            if r < 4:
+                lines.append("├───┼───┼───┼───┼───┤")
+        lines.append("└───┴───┴───┴───┴───┘")
+        
+        centered_lines = [center_text(l) for l in lines]
+        return "\n".join(centered_lines)
 
-    # Prepare plaintext
+    # ?-----------------------------------------------
+    # !       --- Part 2 Tutorial Screen ---
+    # ?-----------------------------------------------
+    sys.stdout.write(FAST_CLEAR) 
+    sys.stdout.write(center_text("The Playfair Cipher: Part 2 - Encryption") + "\n\n")
+    sys.stdout.write(center_text("Now, we'll use the grid to encrypt a message.") + "\n")
+    sys.stdout.write(center_text("The plaintext is first broken into pairs (digraphs).") + "\n\n")
+    
+    sys.stdout.write(center_text(f"  - If a pair has double letters (e.g., {GREEN}'LL'{RESET}), it becomes {GREEN}'LX'{RESET}.") + "\n")
+    sys.stdout.write(center_text(f"  - If the message has an odd length, an {GREEN}'X'{RESET} is added at the end.") + "\n\n")
+    
+    sys.stdout.write(center_text("Then, each pair is encrypted using 3 rules:") + "\n")
+    sys.stdout.write(center_text(f"  1. {YELLOW}Same Row{RESET}: Letters shift to the {YELLOW}Right{RESET}.") + "\n")
+    sys.stdout.write(center_text(f"  2. {YELLOW}Same Column{RESET}: Letters shift {YELLOW}Down{RESET}.") + "\n")
+    sys.stdout.write(center_text(f"  3. {YELLOW}Rectangle{RESET}: Letters {YELLOW}Swap Corners{RESET}.") + "\n\n")
+    
+    sys.stdout.write(center_text(f"Our plaintext will be: {GREEN}{plaintext.upper()}{RESET}") + "\n\n")
+    sys.stdout.flush()
+    input(center_text("Press Enter to begin the encryption..."))
+    # *--- End of tutorial screen ---
+
+
+    # *--- Plaintext & Digraph Prep ---
     plaintext = plaintext.upper().replace("J","I").replace(" ", "")
     
-    # Create digraphs
     digraphs = []
     i = 0
     while i < len(plaintext):
         a = plaintext[i]
-        b = plaintext[i+1] if i+1 < len(plaintext) and plaintext[i+1] != a else 'X'
+        if i + 1 < len(plaintext):
+            if plaintext[i+1] == a:
+                b = 'X'
+                i += 1
+            else:
+                b = plaintext[i+1]
+                i += 2
+        else:
+            b = 'X'
+            i += 1
         digraphs.append(a+b)
-        i += 2 if b != 'X' else 1
 
-    history = []  # (plaintext, cipher)
+    # !--- Main Animation Loop ---
+    history = []
     dig_index = 0
-    sub_step = 0  # 0 = highlight original, 1 = show transformed
+    sub_step = 0
 
     while dig_index < len(digraphs):
+        
+        # !--- 1. STATE CALCULATION ---
         pair = digraphs[dig_index]
         r1, c1 = find_pos(pair[0])
         r2, c2 = find_pos(pair[1])
 
-        # Compute transformed positions
         if r1 == r2:
             new_positions = [(r1, (c1+1)%5), (r2, (c2+1)%5)]
             rule = "Same Row -> Shift Right"
@@ -525,34 +778,53 @@ def playfair_interactive_demo(plaintext="HELLO"):
             new_positions = [(r1, c2), (r2, c1)]
             rule = "Rectangle -> Swap Corners"
 
-        # Reconstruct ciphertext from history
-        ciphertext = "".join(c for _, c in history)
-
-        os.system("cls" if os.name == "nt" else "clear")
-        sys.stdout.write("Playfair Cipher Interactive Demo\n\n")
-        
-        if sub_step == 0:
-            sys.stdout.write(display_grid(highlight=[(r1,c1),(r2,c2)]) + "\n\n")
-            sys.stdout.write(f"Original digraph: {pair}\n")
-            sys.stdout.write("Step A: Highlight plaintext pair. Press Enter to see transformation.\n")
-        else:
-            cipher_pair = "".join([grid[r][c] for r, c in new_positions])
+        # !--- 2. UPDATE HISTORY (if on sub_step 1) ---
+        cipher_pair = "".join([grid[r][c] for r, c in new_positions])
+        if sub_step == 1:
             if len(history) <= dig_index:
                 history.append((pair, cipher_pair))
-            ciphertext = "".join(c for _, c in history)
+        
+        # !--- 3. BUILD DYNAMIC DISPLAY STRINGS ---
+        plaintext_display = ""
+        for i, dig in enumerate(digraphs):
+            if i == dig_index:
+                plaintext_display += f" {GREEN}{dig}{RESET}" # *Current
+            elif i < dig_index:
+                plaintext_display += f" {GREY}{dig}{RESET}" # *Done
+            else:
+                plaintext_display += f" {dig}" # *Future (default color)
+        
+        ciphertext_display = ""
+        for i, (p, c) in enumerate(history):
+            if i == dig_index:
+                ciphertext_display += f" {RED}{c}{RESET}" # *Current
+            else:
+                ciphertext_display += f" {GREY}{c}{RESET}" # *Done
 
+        # !--- 4. RENDER FRAME ---
+        sys.stdout.write(FAST_CLEAR)
+        sys.stdout.write(center_text("The Playfair Cipher: Part 2 - Encryption") + "\n\n")
+
+        if sub_step == 0:
+            sys.stdout.write(display_grid(highlight=[(r1,c1),(r2,c2)]) + "\n\n")
+        else:
             sys.stdout.write(display_grid(highlight=new_positions) + "\n\n")
-            sys.stdout.write(f"Original digraph: {pair} | Rule: {rule}\n")
-            sys.stdout.write("Step B: Transformation applied.\n")
+        
+        sys.stdout.write(center_text(f"Plaintext: {plaintext_display.strip()}") + "\n")
+        sys.stdout.write(center_text(f"Ciphertext: {ciphertext_display.strip()}") + "\n\n")
 
-        if history:
-            sys.stdout.write("\nHistory (plaintext -> ciphertext):\n")
-            for p, c in history:
-                sys.stdout.write(f"{p} -> {c}\n")
-        sys.stdout.write(f"\nCiphertext so far: {ciphertext}\n")
+        if sub_step == 0:
+            sys.stdout.write(center_text(f"Step A: Finding {GREEN}{pair}{RESET}. Press Enter to see transformation.") + "\n")
+            sys.stdout.write(center_text(" ") + "\n") # *<-- Fix for frame height artifact
+        else:
+            sys.stdout.write(center_text(f"Rule: {YELLOW}{rule}{RESET} | {GREEN}{pair}{RESET} -> {RED}{cipher_pair}{RESET}") + "\n")
+            sys.stdout.write(center_text("Step B: Transformation applied.") + "\n")
+        
         sys.stdout.flush()
 
-        choice = input("Press Enter/c to continue, b to go back, q to quit: ").lower().strip()
+        # !--- 5. GET INPUT & UPDATE STATE ---
+        choice = input(f"\n[Enter/c] - Continue, [b] - Back, [q] - Quit: ").lower().strip()
+        
         if choice in ("", "c"):
             if sub_step == 0:
                 sub_step = 1
@@ -563,29 +835,257 @@ def playfair_interactive_demo(plaintext="HELLO"):
             if sub_step == 1:
                 sub_step = 0
                 if history and history[-1][0] == pair:
-                    history.pop()
-            elif sub_step == 0:
-                if dig_index > 0:
-                    dig_index -= 1
-                    sub_step = 1
-                else:
-                    print("Already at first step.")
+                    history.pop() 
+            elif sub_step == 0 and dig_index > 0:
+                dig_index -= 1
+                sub_step = 1
+                if history:
+                    history.pop() 
         elif choice == "q":
-            sys.stdout.write("\nDemo quit by user.\n")
-            sys.stdout.flush()
+            sys.stdout.write("\n" + center_text("Demo quit by user.") + "\n")
             return
-        else:
-            print("Invalid input. Use Enter/c to continue, b to go back, q to quit.")
-
-    sys.stdout.write(f"\nFinal Ciphertext: {ciphertext}\n")
+            
+    # *--- Final Result ---
+    final_ciphertext = "".join(f"{GREY}{c}{RESET}" for _, c in history)
+    sys.stdout.write("\n" + center_text(f"Final Ciphertext: {final_ciphertext}") + "\n")
     sys.stdout.flush()
+    
+
 
 # Run demo
 #playfair_interactive_demo("HELLO")
 
-# Import the symmetric cipher demo from hashdemo.py
+# *Import the symmetric cipher demo from hashdemo.py
 from hashdemo import mini_hash_demo
+@register_demo("Scytale")
+def run_full_scytale_animation(plaintext="ciphersarecool!", cols=5, sleep_time=0.2, pause_time=2.0):
+    """
+    Scytale demo function, requires plaintext and cols kwargs.
+    """
+    clear_screen()
+    # ?=========================================================================
+    # !--- NESTED HELPER FUNCTIONS FOR DRAWING ---
+    # !=========================================================================
 
-@register_demo("Symmetric Cipher Demo")
+    def _draw_part1_frame(grid_state, full_text, current_index, num_rows, num_cols, width):
+        """Draws Part 1: Writing Plaintext"""
+        frame_buffer = [FAST_CLEAR] # *Start with a screen clear and reset
+        
+        frame_buffer.append(center_text("--- Part 1: Writing the Message (Row by Row) ---", width))
+        
+        # *1. Draw the Top Input Phrase
+        top_phrase = "Plaintext: "
+        if current_index == -1: # *Final state
+            top_phrase += full_text
+        else:
+            top_phrase += (
+                full_text[:current_index]
+                + RED
+                + full_text[current_index]
+                + RESET
+                + full_text[current_index + 1 :]
+            )
+        frame_buffer.append(center_text(top_phrase, width))
+        frame_buffer.append("") # *Newline
+
+        # *2. Draw the Grid
+        frame_buffer.append(center_text("--- Scytale Grid ---", width))
+        highlight_r, highlight_c = (-1, -1) if current_index == -1 else (current_index // num_cols, current_index % num_cols)
+        
+        for r in range(num_rows):
+            row_str = ""
+            for c in range(num_cols):
+                char = grid_state[r][c]
+                if r == highlight_r and c == highlight_c:
+                    row_str += f"[{RED}{char}{RESET}] "
+                elif char == " ":
+                    row_str += f"[{GREY}.{RESET}] "
+                else:
+                    row_str += f"[{char}] "
+            frame_buffer.append(center_text(row_str.strip(), width))
+        frame_buffer.append("") # *Newline
+        
+        # !Write the entire frame buffer to stdout at once
+        sys.stdout.write("\n".join(frame_buffer))
+        sys.stdout.flush()
+
+    def _draw_part2_frame(grid_state, built_ciphertext, char_being_added, highlight_r, highlight_c, num_rows, num_cols, width):
+        """Draws Part 2: Reading Ciphertext"""
+        frame_buffer = [FAST_CLEAR]
+
+        frame_buffer.append(center_text("Next, we read each letter column by column. This gives an encrypted message we can pass to others who know", width))
+        frame_buffer.append("")
+
+        # *1. Draw the Grid
+        for r in range(num_rows):
+            row_str = ""
+            for c in range(num_cols):
+                char = grid_state[r][c]
+                if r == highlight_r and c == highlight_c:
+                    row_str += f"[{RED}{char}{RESET}] "
+                else:
+                    row_str += f"[{char}] "
+            frame_buffer.append(center_text(row_str.strip(), width))
+        frame_buffer.append("")
+
+        # *2. Draw the Ciphertext
+        if char_being_added:
+            display_text = f"Ciphertext: {built_ciphertext}{RED}{char_being_added}{RESET}"
+        else:
+            display_text = f"Ciphertext: {built_ciphertext}"
+        frame_buffer.append(center_text(display_text, width))
+        frame_buffer.append("")
+        
+        sys.stdout.write("\n".join(frame_buffer))
+        sys.stdout.flush()
+
+    def _draw_part3_frame(grid_state, ciphertext, current_index, num_rows, num_cols, width):
+        """Draws Part 3: Writing Ciphertext (Decrypt)"""
+        frame_buffer = [FAST_CLEAR]
+
+        frame_buffer.append(center_text("--- Part 3: Decrypting (Writing by Column) ---", width))
+
+        # *1. Draw the Top Ciphertext Phrase
+        top_phrase = "Ciphertext: "
+        if current_index == -1: # *Final state
+            top_phrase += ciphertext
+        else:
+            top_phrase += (
+                ciphertext[:current_index]
+                + RED
+                + ciphertext[current_index]
+                + RESET
+                + ciphertext[current_index + 1 :]
+            )
+        frame_buffer.append(center_text(top_phrase, width))
+        frame_buffer.append("")
+
+        # *2. Draw the Grid
+        frame_buffer.append(center_text("--- Decryption Grid ---", width))
+        highlight_r, highlight_c = (-1, -1) if current_index == -1 else (current_index % num_rows, current_index // num_rows)
+        
+        for r in range(num_rows):
+            row_str = ""
+            for c in range(num_cols):
+                char = grid_state[r][c]
+                if r == highlight_r and c == highlight_c:
+                    row_str += f"[{RED}{char}{RESET}] "
+                elif char == " ":
+                    row_str += f"[{GREY}.{RESET}] "
+                else:
+                    row_str += f"[{char}] "
+            frame_buffer.append(center_text(row_str.strip(), width))
+        frame_buffer.append("")
+        
+        sys.stdout.write("\n".join(frame_buffer))
+        sys.stdout.flush()
+
+    def _draw_part4_frame(grid_state, built_text, char_being_added, highlight_r, highlight_c, num_rows, num_cols, width):
+        """Draws Part 4: Reading Original Text"""
+        frame_buffer = [FAST_CLEAR]
+        
+        frame_buffer.append(center_text("--- Part 4: Reading the Original Message (Row by Row) ---", width))
+        frame_buffer.append("")
+
+        # *1. Draw the Grid
+        for r in range(num_rows):
+            row_str = ""
+            for c in range(num_cols):
+                char = grid_state[r][c]
+                if r == highlight_r and c == highlight_c:
+                    row_str += f"[{RED}{char}{RESET}] "
+                else:
+                    row_str += f"[{char}] "
+            frame_buffer.append(center_text(row_str.strip(), width))
+        frame_buffer.append("")
+
+        # *2. Draw the Final Decrypted Text
+        if char_being_added:
+            display_text = f"Original Text: {built_text}{RED}{char_being_added}{RESET}"
+        else:
+            display_text = f"Original Text: {built_text}"
+        frame_buffer.append(center_text(display_text, width))
+        frame_buffer.append("")
+
+        sys.stdout.write("\n".join(frame_buffer))
+        sys.stdout.flush()
+
+    # ?=========================================================================
+    # !--- MAIN ANIMATION LOGIC ---
+    # ?=========================================================================
+
+    try:
+        # *--- 1. Setup ---
+        # *Hide cursor
+        sys.stdout.write("\033[?25l")
+        
+        width = get_terminal_width()
+        text_len = len(plaintext)
+        rows = (text_len + cols - 1) // cols
+        padded_text = plaintext + "@" * ((rows * cols) - text_len)
+        
+        # !--- Part 1: Write Rows (Encrypt) ---
+        grid = [[" " for _ in range(cols)] for _ in range(rows)]
+        for i in range(len(padded_text)):
+            r, c = i // cols, i % cols
+            grid[r][c] = padded_text[i]
+            _draw_part1_frame(grid, padded_text, i, rows, cols, width)
+            time.sleep(sleep_time)
+        
+        _draw_part1_frame(grid, padded_text, -1, rows, cols, width)
+        sys.stdout.write(center_text("Part 1 Complete!", width) + "\n")
+        sys.stdout.flush()
+        time.sleep(pause_time)
+
+        # !--- Part 2: Read Cols (Encrypt) ---
+        ciphertext = ""
+        for c in range(cols):
+            for r in range(rows):
+                char_to_add = grid[r][c]
+                _draw_part2_frame(grid, ciphertext, char_to_add, r, c, rows, cols, width)
+                time.sleep(sleep_time)
+                ciphertext += char_to_add
+        
+        _draw_part2_frame(grid, ciphertext, "", -1, -1, rows, cols, width)
+        sys.stdout.write(center_text("Ciphertext Complete!", width) + "\n")
+        sys.stdout.flush()
+        time.sleep(pause_time)
+
+        # !--- Part 3: Write Cols (Decrypt) ---
+        grid3 = [[" " for _ in range(cols)] for _ in range(rows)]
+        for i in range(len(ciphertext)):
+            r, c = i % rows, i // rows
+            grid3[r][c] = ciphertext[i]
+            _draw_part3_frame(grid3, ciphertext, i, rows, cols, width)
+            time.sleep(sleep_time)
+            
+        _draw_part3_frame(grid3, ciphertext, -1, rows, cols, width)
+        sys.stdout.write(center_text("Part 3 Complete! Grid is refilled.", width) + "\n")
+        sys.stdout.flush()
+        time.sleep(pause_time)
+
+        # !--- Part 4: Read Rows (Decrypt) ---
+        original_text = ""
+        for r in range(rows):
+            for c in range(cols):
+                char_to_add = grid3[r][c]
+                _draw_part4_frame(grid3, original_text, char_to_add, r, c, rows, cols, width)
+                time.sleep(sleep_time)
+                original_text += char_to_add
+        
+        _draw_part4_frame(grid3, original_text, "", -1, -1, rows, cols, width)
+        sys.stdout.write(center_text("Decryption Complete!", width) + "\n")
+        sys.stdout.flush()
+
+    except KeyboardInterrupt:
+        sys.stdout.write("\nAnimation stopped.\n")
+    finally:
+        # !ALWAYS restore the terminal
+        # *Show cursor, reset colors
+        sys.stdout.write(RESET + "\033[?25h" + "\n")
+        sys.stdout.flush()
+
+@register_demo("Symmetric Cipher Demo") 
 def symmetric_cipher_demo_wrapper():
+    clear_screen()
     mini_hash_demo()

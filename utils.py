@@ -6,12 +6,13 @@ import re
 # --- ANSI Color Constants ---
 RED = "\033[91m"
 GREEN = "\033[92m"
-YELLOW = "\033[93m"
+YELLOW = "\033[1;33m"
 GREY = "\033[90m"  # Add this new color
 RESET = "\033[0m"
 ANSI_ESCAPE = re.compile(r'\033\[[0-9;]*m')
 UP = "\033[F" 
-
+FAST = "\033[H"
+FAST_CLEAR = "\033[H\033[2J"
 # --- Terminal Functions ---
 def get_terminal_width():
     """Gets the current terminal width, with a fallback."""

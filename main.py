@@ -382,14 +382,19 @@ def run_level_progression(seed=None):
                 rounds_played += 1
                 break
             else:
-                if points == 0:
-                    print("Incorrect! But you get 1 point for trying.")
-                    total_score += 1
-                    rounds_played += 1
-                    break
-                else:
-                    points = 1
+                # This was their FIRST mistake
+                if points > 2:
+                    points = 2 # Set points to 1 for the last chance
                     print("Incorrect! You have one more chance...")
+                    time.sleep(0.75)
+                
+                # This was their FINAL mistake 1
+                else:
+                    print(f"\nIncorrect! The correct answer was: {GREEN}{rnd['plaintext']}{RESET}")
+                    print("You get 1 point for trying.")
+                    total_score += 1 # Give the consolation point
+                    rounds_played += 1
+                    break 
 
         recent.append(current_cipher_name)
         input("\nPress Enter to continue...")
