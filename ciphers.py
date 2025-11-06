@@ -121,7 +121,7 @@ def monoalphabetic_substitution_encrypt(text: str) -> str:
 def rail_fence_encrypt(text: str, rails: int) -> str:
     if rails <= 1:
         return _to_upper_letters_and_spaces(text)
-    # NEW
+    
     text_u = _to_upper_letters_and_spaces(text).replace(" ", "")    
     fence = [[] for _ in range(rails)]
     rail = 0

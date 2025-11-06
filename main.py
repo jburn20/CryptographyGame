@@ -23,9 +23,9 @@ def build_storefront_items():
     Applies manual prices from the MANUAL_PRICES dict.
     """
     
-    # ---
-    # --- EDIT THIS DICTIONARY TO MANUALLY SET 3 OR 5 POINT PRICES ---
-    # ---
+    # ?---
+    # !--- EDIT THIS DICTIONARY TO MANUALLY SET 3 OR 5 POINT PRICES ---
+    # ?---
     MANUAL_PRICES = {
         'prizes/linuxtype.json': 3,
         'prizes/game!.json': 3,
@@ -35,7 +35,8 @@ def build_storefront_items():
         'prizes/dance2.json': 3,
         'prizes/juggler.json': 3,
         'prizes/lookrighthere.json': 3,
-        'prizes/spinning.json': 3,
+        'prizes/peter.json': 3,
+        'prizes/steezy.json': 3,
         'prizes/exasperated.json': 3,
         'prizes/lockin.json': 3,
         'prizes/shymariachi.json': 5,
@@ -48,20 +49,19 @@ def build_storefront_items():
         'prizes/roguedata.json': 5,
 
     }
-    # ---
-    # --- END OF MANUAL CONFIGURATION ---
-    # ---
+    # !---
+    # ?--- END OF MANUAL CONFIGURATION ---
+    # !---
 
     store_items = {}
     item_key = 1  # Start item numbering at 1
     prizes_dir = 'prizes'
     
-    # Ensure prizes directory exists
+    # *Ensure prizes directory exists
     if not os.path.exists(prizes_dir):
         return {} # Return empty store if no prize folder
 
-    # --- Step 1: Add all 1-point default items ---
-    # We sort the files alphabetically to ensure a consistent order
+    # !--- Step 1: Add all 1-point default items ---
     try:
         all_files = sorted(os.listdir(prizes_dir))
     except FileNotFoundError:
@@ -80,9 +80,8 @@ def build_storefront_items():
                 }
                 item_key += 1
                 
-    # --- Step 2: Add all manually-priced items ---
-    # This loop ensures they are added *after* the defaults, with correct keys
-    # We sort these too, for consistency
+    # !--- Step 2: Add all manually-priced items ---
+    # *This loop ensures they are added *after* the defaults, with correct keys
     for file_path, cost in sorted(MANUAL_PRICES.items()):
         # Check if the manually-priced file actually exists
         if os.path.exists(file_path):
@@ -96,7 +95,7 @@ def build_storefront_items():
             print(f"[Store Warning] Manual price set for missing file: {file_path}")
 
     return store_items
-# --- End of new function ---
+# !--- End of new function ---
 
 
 def _diff_color(difficulty):
@@ -107,7 +106,7 @@ def _diff_color(difficulty):
     return RED
 
 def _clean_word(text):
-    # Allow letters plus spaces only
+    # *Allow letters plus spaces only
     return "".join(ch for ch in text if ch.isalpha() or ch == " ")
 
 def random_picker():
@@ -122,15 +121,15 @@ def smart_word_picker(cipher_name):
         raw = [line.rstrip("\n") for line in f if line.strip()]
     words = [w for w in (_clean_word(x) for x in raw) if w]
     
-    # Categorize words by length
+    # *Categorize words by length
     word_lengths = [len(word.split()) for word in words]
     short_words = [w for w in words if len(w.split()) <= 3]
     medium_words = [w for w in words if 3 < len(w.split()) <= 4]
     long_words = [w for w in words if len(w.split()) > 4]
     
-    # Select based on cipher type
+    # !Select based on cipher type
     if cipher_name in ["Columnar", "Affine", "Monoalphabetic Substitution Cipher"]:
-        # Hard ciphers - prefer longer phrases for better patterns
+        # *Hard ciphers - prefer longer phrases for better patterns
         if long_words:
             return random.choice(long_words)
         elif medium_words:
@@ -142,7 +141,7 @@ def smart_word_picker(cipher_name):
         return random.choice(words)
 
 
-# --- Storefront Function (Now calls build_storefront_items) ---
+# !--- Storefront Function ---
 def run_storefront(total_score):
     """
     Displays the post-game storefront UI.
@@ -150,14 +149,14 @@ def run_storefront(total_score):
     """
     current_score = total_score
     
-    # --- MODIFIED: Build store items dynamically ---
+    # !--- MODIFIED: Build store items dynamically ---
     STORE_ITEMS = build_storefront_items()
     if not STORE_ITEMS:
         print(center_text(f"{RED}No items found in 'prizes' directory!{RESET}"))
         input(center_text("Press Enter to continue..."))
         return
 
-    # Sort items by cost for display
+    # *Sort items by cost for display
     sorted_items = sorted(STORE_ITEMS.items(), key=lambda item: int(item[0]))    
     print(sorted_items)
     watched = []
@@ -169,17 +168,16 @@ def run_storefront(total_score):
         print(center_text("=" * 60))
         print(center_text(f"Your Points: {YELLOW}{current_score}{RESET}"))
         print("\n")
-        # --- New Color Key ---
+        # !--- New Color Key ---
         print(center_text(f"Cost Key: {GREEN}1 Point{RESET} | {YELLOW}3 Points{RESET} | {RED}5 Points{RESET}"))
         print(center_text("-" * 45))
         print("\nAvailable Animations:\n")
 
-        # --- New Single-Column List ---
+        # *--- New Single-Column List ---
         for key, item in sorted_items:
             cost = item['cost']
             name = item['name']
-            #print(name)
-            # Determine color by cost
+            # *Determine color by cost
             if cost == 1:
                 color = GREEN
             elif cost == 3:
@@ -187,7 +185,7 @@ def run_storefront(total_score):
             else:
                 color = RED
             
-            # Override color if unaffordable
+            # *Override color if unaffordable
             if current_score < cost:
                 color = GREY
             if name in watched: 
@@ -239,7 +237,7 @@ def run_storefront(total_score):
 
     clear_screen()
     print(center_text("Thanks for visiting the theater!"))
-# --- End of Storefront Function ---
+# !--- End of Storefront Function ---
 
 
 def run_level_progression(seed=None):
@@ -285,9 +283,8 @@ def run_level_progression(seed=None):
                 continue
         
         if choice == "0":
-            # --- MODIFIED: Game Over Logic ---
             clear_screen()
-            # --- Corrected Centered Headers ---
+            # !--- Corrected Centered Headers ---
             print(center_text("=" * 60))
             print(center_text("GAME COMPLETE"))
             print(center_text("=" * 60))
@@ -295,7 +292,7 @@ def run_level_progression(seed=None):
             print(center_text(f"Rounds Played:    {rounds_played}"))
             print(center_text("=" * 60))
             
-            # --- NEW: Call the Storefront ---
+            # !--- Call the Storefront ---
             print("\n" + center_text("You can now spend your points at the Theater!"))
             input(center_text("Press Enter to continue..."))
             
@@ -382,13 +379,13 @@ def run_level_progression(seed=None):
                 rounds_played += 1
                 break
             else:
-                # This was their FIRST mistake
+                # ! This was their FIRST mistake
                 if points > 2:
                     points = 2 # Set points to 1 for the last chance
                     print("Incorrect! You have one more chance...")
                     time.sleep(0.75)
                 
-                # This was their FINAL mistake 1
+                # ! This was their FINAL mistake 1
                 else:
                     print(f"\nIncorrect! The correct answer was: {GREEN}{rnd['plaintext']}{RESET}")
                     print("You get 1 point for trying.")
@@ -425,7 +422,7 @@ def get_cipher_params(name):
         params["primer"] = input("primer (1-3 letters): ").strip().upper() or "KEY"
     elif name == "Scytale":
         params["diameter"] = int(input("diameter (3-5): ") or 3)
-    # ROT13, Atbash: no params needed
+    # !ROT13, Atbash: no params needed
     return params
 
 def run_cipher_tester():
@@ -445,7 +442,7 @@ def run_cipher_tester():
         return
     meta = CIPHERS[name]
     
-    # Ask if user wants to use smart word picker or enter their own
+    # !Ask if user wants to use smart word picker or enter their own
     use_smart = input("Use smart word picker for this cipher? [Y/n]: ").strip().lower()
     if use_smart in ("", "y", "yes"):
         plaintext = smart_word_picker(name)
@@ -502,7 +499,7 @@ def run_demo(file_name):
 def dev_test_prize_system():
     """Dev mode: Test the prize/star rating system"""
     clear_screen()
-    # --- Corrected Centered Headers ---
+    # !--- Corrected Centered Headers ---
     print(center_text("=" * 60))
     print(center_text("DEV MODE - STOREFRONT TEST"))
     print(center_text("=" * 60))
@@ -518,7 +515,7 @@ def dev_test_prize_system():
         print("Invalid input")
     
     input("\nPress Enter to continue...")
-    # The old star/badge test logic is no longer needed.
+    
 
 try:
     menu_text = "Welcome to a Cryptography learning game. Enter [1] to test your decryption skills, [2] for demos, or [3] for cipher tester"
