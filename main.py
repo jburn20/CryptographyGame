@@ -538,8 +538,8 @@ try:
             back = input("\nTest another? [Y/n]: ").strip().lower()
             if back in ("n", "no"):
                 break
-    elif userMode == 4: 
-         # QUIZ ABOUT CYPHERS
+    elif userMode == 4:
+        # QUIZ ABOUT CIPHERS
         quiz_menu()
     elif userMode == 9 and DEV_MODE:
         dev_test_prize_system() # This now tests the storefront

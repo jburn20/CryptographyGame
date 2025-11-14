@@ -373,13 +373,11 @@ def jefferson_cipher_demo(plaintext="DECRYPTME", key_offset=6):
     plaintext = plaintext.upper()
     ciphertext = ""
 
-    # --- NEW LOGIC ---
     # Every column will travel this many steps.
-    # We'll set this to 6 to give it one more step, as requested.
+    
     TRAVEL_DISTANCE = 6 
     # The total width to draw is the last letter's start position.
     max_draw_width = (len(plaintext) - 1) + TRAVEL_DISTANCE
-    # --- END NEW LOGIC ---
 
     # Initialize columns
     columns = []
@@ -405,9 +403,9 @@ def jefferson_cipher_demo(plaintext="DECRYPTME", key_offset=6):
             "target_idx": c_idx,            # The index of the ciphertext char
             "current_idx": random_start_idx,# The current "spun" index
             "target_pos": col_num,          # For horizontal slot-in
-            "current_pos": col_num + TRAVEL_DISTANCE # <-- NEW: Start relative to target
+            "current_pos": col_num + TRAVEL_DISTANCE # <-- Start relative to target
         })
-
+    
     # This variable tracks the height of the *previous* frame
     prev_frame_lines = 8 # Part 1's frame is 8 lines
     print("\n" * prev_frame_lines)
@@ -443,7 +441,7 @@ def jefferson_cipher_demo(plaintext="DECRYPTME", key_offset=6):
                         elif row_name == "middle":
                             letter = alphabet[idx] # Ciphertext align
                         else:
-                            letter = alphabet[(idx + 1) % 26] # Filler
+                            letter = alphabet[(idx + 1) % 26] # Filler for bottom
                         # ---
                         
                         is_active = (col_data == col_to_animate)
@@ -573,10 +571,6 @@ def jefferson_cipher_demo(plaintext="DECRYPTME", key_offset=6):
 
 
 
-import sys
-import os
-import time
-from collections import OrderedDict
 
 
 @register_demo("Playfair")

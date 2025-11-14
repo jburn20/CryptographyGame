@@ -5,6 +5,7 @@ Extensible quiz module for testing cipher knowledge
 """
 
 import random
+import math
 from utils import GREEN, YELLOW, RED, GREY, RESET, clear_screen, center_text
 
 # ============================================================================
@@ -341,7 +342,7 @@ QUIZ_QUESTIONS = {
                 "C) Rail 3",
                 "D) Back to Rail 1"
             ],
-            "correct": "C",
+            "correct": "A",
             "explanation": "The pattern zigzags: Rail 1→2→3→2→1, so the 5th character hits Rail 1 after bouncing back."
         }
     ],
@@ -573,6 +574,8 @@ def run_quiz(num_questions=10, cipher_filter=None):
     """
     questions = get_random_questions(num_questions, cipher_filter)
     score = 0
+    streak = 0
+    total_points = 0
     results = []
     
     clear_screen()
@@ -604,15 +607,19 @@ def run_quiz(num_questions=10, cipher_filter=None):
             print(center_text(option))
         
         print()
-        print(center_text(f"{GREY}(Type QUIT or EXIT to return to menu){RESET}"))
-        user_answer = input(center_text("Your answer: ") + " ").strip()
+        print(f"{GREY}(Type QUIT or EXIT to return to menu){RESET}")
+        user_answer = input("Your answer: " + " ").strip()
         
         # Check for exit commands
         if user_answer.upper() in ['QUIT', 'EXIT', 'Q']:
             clear_screen()
             print(center_text(f"{YELLOW}Quiz ended early{RESET}"))
-            print(center_text(f"Questions answered: {i-1}/{len(questions)}"))
-            print(center_text(f"Score so far: {score}/{i-1}"))
+            if i-1 == 0:
+                print(center_text(f"{YELLOW}No questions answered yet{RESET}"))
+            else:
+                print(center_text(f"Questions answered: {i-1}/{len(questions)}"))
+                print(center_text(f"Score so far: {score}/{i-1}"))
+                print(center_text(f"Points earned: {total_points}"))
             print()
             input(center_text("Press Enter to return to menu..."))
             return None  # Return None to indicate early exit
@@ -622,10 +629,33 @@ def run_quiz(num_questions=10, cipher_filter=None):
         
         is_correct = normalized == correct
         
+        # Calculate points with streak multiplier
+        points_earned_this_question = 0
+        if is_correct:
+            streak += 1
+            score += 1
+            
+            # Base points: 1 per correct answer
+            base_points = 1.0
+            
+            # Apply multiplier if streak > 3
+            if streak > 3:
+                # Multiplier: 1.5x base, +0.5x per question after streak > 3
+                multiplier = max(1.5, 1.0 + (streak - 3) * 0.5)
+                points_earned_this_question = math.ceil(base_points * multiplier)
+            else:
+                points_earned_this_question = int(base_points)
+            
+            total_points += points_earned_this_question
+        else:
+            streak = 0  # Reset streak on incorrect answer
+        
         print()
         if is_correct:
-            print(center_text(f"{GREEN}✓ Correct!{RESET}"))
-            score += 1
+            if streak > 3:
+                print(center_text(f"{GREEN}✓ Correct!{RESET} (+{points_earned_this_question} points, {streak} streak!)"))
+            else:
+                print(center_text(f"{GREEN}✓ Correct!{RESET} (+{points_earned_this_question} point)"))
         else:
             print(center_text(f"{RED}✗ Incorrect{RESET}"))
             print(center_text(f"The correct answer was: {GREEN}{correct}{RESET}"))
@@ -639,7 +669,8 @@ def run_quiz(num_questions=10, cipher_filter=None):
             'question': question['question'],
             'correct': is_correct,
             'user_answer': normalized,
-            'correct_answer': correct
+            'correct_answer': correct,
+            'points_earned': points_earned_this_question
         })
         
         if i < len(questions):
@@ -654,6 +685,7 @@ def run_quiz(num_questions=10, cipher_filter=None):
     percentage = (score / len(questions)) * 100
     
     print(center_text(f"Score: {score}/{len(questions)} ({percentage:.1f}%)"))
+    print(center_text(f"Points Earned: {YELLOW}{total_points}{RESET}"))
     print()
     
     if percentage >= 90:
@@ -676,15 +708,23 @@ def run_quiz(num_questions=10, cipher_filter=None):
         'score': score,
         'total': len(questions),
         'percentage': percentage,
+        'points_earned': total_points,
         'results': results
     }
 
 def quiz_menu():
     """Interactive menu for quiz system"""
+    # Import storefront here to avoid circular import
+    from main import run_storefront
+    
+    total_quiz_points = 0  # Accumulate points across quiz sessions
+    
     while True:
         clear_screen()
         print(center_text("=" * 60))
         print(center_text("CRYPTOGRAPHY QUIZ"))
+        print(center_text("=" * 60))
+        print(center_text(f"Total Quiz Points: {YELLOW}{total_quiz_points}{RESET}"))
         print(center_text("=" * 60))
         print()
         print(center_text("Choose quiz mode:"))
@@ -693,12 +733,13 @@ def quiz_menu():
         print(center_text("[2] Full Quiz (all questions - all topics)"))
         print(center_text("[3] Cipher-Specific Quiz"))
         print(center_text("[4] Custom Quiz"))
+        print(center_text("[5] Visit Storefront"))
         print(center_text("[0] Back to Main Menu"))
         print()
-        print(center_text(f"{GREY}(You can type QUIT or EXIT during any quiz to return here){RESET}"))
+        print(f"{GREY}(You can type QUIT or EXIT during any quiz to return here){RESET}")
         print()
         
-        choice = input(center_text("Your choice: ") + " ").strip()
+        choice = input("Your choice: " + " ").strip()
         
         # Allow exit from menu selection too
         if choice.upper() in ['QUIT', 'EXIT', 'Q']:
@@ -709,12 +750,14 @@ def quiz_menu():
         elif choice == "1":
             result = run_quiz(num_questions=10)
             if result is not None:  # Only show completion message if quiz finished
+                total_quiz_points += result.get('points_earned', 0)
                 input("\n" + center_text("Press Enter to continue..."))
         elif choice == "2":
             # Count all questions
             total = sum(len(q) for q in QUIZ_QUESTIONS.values())
             result = run_quiz(num_questions=total)
             if result is not None:
+                total_quiz_points += result.get('points_earned', 0)
                 input("\n" + center_text("Press Enter to continue..."))
         elif choice == "3":
             # Cipher-specific
@@ -728,7 +771,7 @@ def quiz_menu():
             print(center_text("[0] Back"))
             print()
             
-            cipher_choice = input(center_text("Your choice: ") + " ").strip()
+            cipher_choice = input("Your choice: " + " ").strip()
             
             # Allow exit here too
             if cipher_choice.upper() in ['QUIT', 'EXIT', 'Q']:
@@ -743,24 +786,38 @@ def quiz_menu():
                     questions = get_questions_for_cipher(selected_cipher)
                     result = run_quiz(num_questions=len(questions), cipher_filter=[selected_cipher])
                     if result is not None:
+                        total_quiz_points += result.get('points_earned', 0)
                         input("\n" + center_text("Press Enter to continue..."))
             except ValueError:
-                pass
+                print(center_text(f"{RED}Invalid choice{RESET}"))
+                input(center_text("Press Enter to continue..."))
         elif choice == "4":
             # Custom
             try:
-                num_input = input(center_text("How many questions? ") + " ").strip()
+                num_input = input("How many questions? " + " ").strip()
                 
                 # Allow exit here too
                 if num_input.upper() in ['QUIT', 'EXIT', 'Q']:
                     continue
                     
                 num = int(num_input)
+                if num <= 0:
+                    print(center_text(f"{RED}Please enter a positive number of questions.{RESET}"))
+                    input(center_text("Press Enter to continue..."))
+                    continue
                 result = run_quiz(num_questions=num)
                 if result is not None:
+                    total_quiz_points += result.get('points_earned', 0)
                     input("\n" + center_text("Press Enter to continue..."))
             except ValueError:
                 print(center_text(f"{RED}Invalid number{RESET}"))
+                input(center_text("Press Enter to continue..."))
+        elif choice == "5":
+            # Visit Storefront
+            if total_quiz_points > 0:
+                run_storefront(total_quiz_points)
+            else:
+                print(center_text(f"{YELLOW}You need to earn points from quizzes first!{RESET}"))
                 input(center_text("Press Enter to continue..."))
 
 # ============================================================================
@@ -868,5 +925,3 @@ def add_custom_question(cipher_name, question_data):
 if __name__ == "__main__":
     # Run validation tests
     run_quiz_tests()
-    
-    #
