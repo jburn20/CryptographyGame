@@ -5,7 +5,7 @@ Extensible quiz module for testing cipher knowledge
 """
 
 import random
-from utils import GREEN, YELLOW, RED, RESET, clear_screen, center_text
+from utils import GREEN, YELLOW, RED, GREY, RESET, clear_screen, center_text
 
 # ============================================================================
 # QUIZ QUESTION DATABASE
@@ -569,7 +569,7 @@ def run_quiz(num_questions=10, cipher_filter=None):
         cipher_filter: Optional list of cipher names to focus on
     
     Returns:
-        dict with score statistics
+        dict with score statistics or None if user exits early
     """
     questions = get_random_questions(num_questions, cipher_filter)
     score = 0
@@ -587,6 +587,8 @@ def run_quiz(num_questions=10, cipher_filter=None):
         print(center_text("Topic: All Ciphers"))
     
     print(center_text("=" * 60))
+    print(center_text(f"{YELLOW}(Type 'QUIT' or 'EXIT' at any time to return to menu){RESET}"))
+    print(center_text("=" * 60))
     input(center_text("Press Enter to begin..."))
     
     for i, question in enumerate(questions, 1):
@@ -602,7 +604,19 @@ def run_quiz(num_questions=10, cipher_filter=None):
             print(center_text(option))
         
         print()
+        print(center_text(f"{GREY}(Type QUIT or EXIT to return to menu){RESET}"))
         user_answer = input(center_text("Your answer: ") + " ").strip()
+        
+        # Check for exit commands
+        if user_answer.upper() in ['QUIT', 'EXIT', 'Q']:
+            clear_screen()
+            print(center_text(f"{YELLOW}Quiz ended early{RESET}"))
+            print(center_text(f"Questions answered: {i-1}/{len(questions)}"))
+            print(center_text(f"Score so far: {score}/{i-1}"))
+            print()
+            input(center_text("Press Enter to return to menu..."))
+            return None  # Return None to indicate early exit
+        
         normalized = normalize_answer(user_answer)
         correct = question['correct']
         
@@ -681,19 +695,27 @@ def quiz_menu():
         print(center_text("[4] Custom Quiz"))
         print(center_text("[0] Back to Main Menu"))
         print()
+        print(center_text(f"{GREY}(You can type QUIT or EXIT during any quiz to return here){RESET}"))
+        print()
         
         choice = input(center_text("Your choice: ") + " ").strip()
+        
+        # Allow exit from menu selection too
+        if choice.upper() in ['QUIT', 'EXIT', 'Q']:
+            choice = "0"
         
         if choice == "0":
             break
         elif choice == "1":
-            run_quiz(num_questions=10)
-            input("\n" + center_text("Press Enter to continue..."))
+            result = run_quiz(num_questions=10)
+            if result is not None:  # Only show completion message if quiz finished
+                input("\n" + center_text("Press Enter to continue..."))
         elif choice == "2":
             # Count all questions
             total = sum(len(q) for q in QUIZ_QUESTIONS.values())
-            run_quiz(num_questions=total)
-            input("\n" + center_text("Press Enter to continue..."))
+            result = run_quiz(num_questions=total)
+            if result is not None:
+                input("\n" + center_text("Press Enter to continue..."))
         elif choice == "3":
             # Cipher-specific
             clear_screen()
@@ -703,24 +725,40 @@ def quiz_menu():
             for i, cipher in enumerate(ciphers, 1):
                 num_q = len(get_questions_for_cipher(cipher))
                 print(center_text(f"[{i}] {cipher} ({num_q} questions)"))
+            print(center_text("[0] Back"))
             print()
             
             cipher_choice = input(center_text("Your choice: ") + " ").strip()
+            
+            # Allow exit here too
+            if cipher_choice.upper() in ['QUIT', 'EXIT', 'Q']:
+                continue
+            if cipher_choice == "0":
+                continue
+                
             try:
                 idx = int(cipher_choice) - 1
                 if 0 <= idx < len(ciphers):
                     selected_cipher = ciphers[idx]
                     questions = get_questions_for_cipher(selected_cipher)
-                    run_quiz(num_questions=len(questions), cipher_filter=[selected_cipher])
-                    input("\n" + center_text("Press Enter to continue..."))
+                    result = run_quiz(num_questions=len(questions), cipher_filter=[selected_cipher])
+                    if result is not None:
+                        input("\n" + center_text("Press Enter to continue..."))
             except ValueError:
                 pass
         elif choice == "4":
             # Custom
             try:
-                num = int(input(center_text("How many questions? ") + " "))
-                run_quiz(num_questions=num)
-                input("\n" + center_text("Press Enter to continue..."))
+                num_input = input(center_text("How many questions? ") + " ").strip()
+                
+                # Allow exit here too
+                if num_input.upper() in ['QUIT', 'EXIT', 'Q']:
+                    continue
+                    
+                num = int(num_input)
+                result = run_quiz(num_questions=num)
+                if result is not None:
+                    input("\n" + center_text("Press Enter to continue..."))
             except ValueError:
                 print(center_text(f"{RED}Invalid number{RESET}"))
                 input(center_text("Press Enter to continue..."))
