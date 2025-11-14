@@ -7,6 +7,7 @@ import random, os, sys, string, time, subprocess
 from ciphers import generate_round, choose_difficulty_for_level, CIPHERS, generate_specific_round
 # Import the new helper functions and GREY color
 from utils import GREEN, YELLOW, RED, GREY, RESET, clear_screen, center_text, get_terminal_width
+from quiz import quiz_menu
 
 # --- Dev toggles ---
 DEV_SHOW_CIPHER = False  # Show cipher names during gameplay
@@ -518,7 +519,7 @@ def dev_test_prize_system():
     
 
 try:
-    menu_text = "Welcome to a Cryptography learning game. Enter [1] to test your decryption skills, [2] for demos, or [3] for cipher tester"
+    menu_text = "Welcome to a Cryptography learning game. Enter [1] to test your decryption skills, [2] for demos, or [3] for cipher tester, [4] for quiz"
     if DEV_MODE:
         menu_text += ", or [9] for dev tests"
     menu_text += ".\n"
@@ -537,6 +538,9 @@ try:
             back = input("\nTest another? [Y/n]: ").strip().lower()
             if back in ("n", "no"):
                 break
+    elif userMode == 4: 
+         # QUIZ ABOUT CYPHERS
+        quiz_menu()
     elif userMode == 9 and DEV_MODE:
         dev_test_prize_system() # This now tests the storefront
     else:
